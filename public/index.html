@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InvestLearn</title>
+<style>
+  :root {
+    --bg: #f4f3ee; --card: #ffffff; --border: #e2e0d6;
+    --text-primary: #26251f; --text-secondary: #6b6a62; --text-muted: #9a988d;
+    --accent: #0f6e56; --accent-bg: #e1f5ee; --accent-text: #085041;
+    --danger: #a32d2d; --danger-bg: #fcebeb;
+    --amber: #854f0b; --amber-bg: #faeeda;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text-primary); font-family: -apple-system,"Noto Sans Thai","Segoe UI",sans-serif; }
+  .app-shell { max-width: 420px; margin: 0 auto; min-height: 100vh; background: var(--card); padding-bottom: 30px; }
+  .center-pad { padding: 40px 24px; }
+  .logo-mark { width: 52px; height: 52px; border-radius: 16px; background: var(--accent-bg); color: var(--accent-text); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 600; margin: 0 auto 12px; }
+  h1 { font-size: 17px; font-weight: 600; text-align: center; margin: 0 0 4px; }
+  .subtitle { text-align: center; font-size: 12.5px; color: var(--text-muted); margin: 0 0 24px; }
+  label { display: block; font-size: 12px; color: var(--text-secondary); margin: 14px 0 5px; }
+  input[type=text], input[type=password], input[type=number], textarea {
+    width: 100%; border: 0.5px solid var(--border); border-radius: 10px; padding: 10px 12px;
+    font-size: 13.5px; background: var(--bg); color: var(--text-primary); font-family: inherit;
+  }
+  textarea { resize: none; height: 60px; }
+  .btn { display: block; width: 100%; text-align: center; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 600; margin-top: 12px; border: none; cursor: pointer; font-family: inherit; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-secondary { background: transparent; border: 0.5px solid var(--border); color: var(--text-primary); }
+  .btn-sell { background: var(--danger); color: #fff; }
+  .error-text { font-size: 12px; color: var(--danger); margin-top: 6px; }
+  .hint-text { font-size: 11px; color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
+  [hidden] { display: none !important; }
+
+  header.topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 0.5px solid var(--border); }
+  header.topbar .greet { font-size: 12px; color: var(--text-secondary); }
+  header.topbar .cash { font-size: 15px; font-weight: 600; }
+  header.topbar button { background: none; border: none; color: var(--text-muted); font-size: 12px; cursor: pointer; font-family: inherit; }
+
+  nav.tabs { display: flex; border-bottom: 0.5px solid var(--border); }
+  nav.tabs button { flex: 1; padding: 12px 0; background: none; border: none; font-size: 12.5px; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; font-family: inherit; }
+  nav.tabs button.active { color: var(--accent); border-color: var(--accent); font-weight: 600; }
+
+  .content { padding: 16px 18px; }
+  .stock-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 0.5px solid var(--border); cursor: pointer; }
+  .stock-row .name { font-size: 13.5px; font-weight: 600; }
+  .stock-row .sub { font-size: 11px; color: var(--text-muted); }
+  .stock-row .price { font-size: 13.5px; font-weight: 600; text-align: right; }
+  .stock-row .chg { font-size: 11px; text-align: right; }
+  .up { color: var(--accent); } .down { color: var(--danger); }
+
+  .back-link { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 10px; cursor: pointer; display: inline-block; }
+  .detail-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .detail-head .t { font-size: 19px; font-weight: 600; }
+  .detail-head .n { font-size: 12px; color: var(--text-secondary); }
+  .detail-head .p { font-size: 21px; font-weight: 600; text-align: right; }
+
+  .range-pills { display: flex; gap: 6px; margin: 10px 0; }
+  .range-pills button { flex: 1; font-size: 11.5px; padding: 6px 0; border-radius: 8px; border: 0.5px solid var(--border); background: transparent; color: var(--text-secondary); font-family: inherit; cursor: pointer; }
+  .range-pills button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .chart-wrap { height: 140px; border: 0.5px solid var(--border); border-radius: 10px; padding: 8px; margin-bottom: 14px; }
+  .chart-wrap svg { width: 100%; height: 100%; }
+
+  .tabgroup { display: flex; gap: 8px; margin-bottom: 12px; }
+  .tabgroup button { flex: 1; padding: 9px 0; border-radius: 8px; border: 0.5px solid var(--border); background: transparent; font-size: 13px; font-family: inherit; cursor: pointer; color: var(--text-primary); }
+  .tabgroup button.active.buy { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tabgroup button.active.sell { background: var(--danger); border-color: var(--danger); color: #fff; }
+
+  .qty-box { display: flex; align-items: center; justify-content: space-between; border: 0.5px solid var(--border); border-radius: 10px; padding: 6px 10px; margin: 6px 0; }
+  .qty-box button { width: 30px; height: 30px; border-radius: 50%; border: 0.5px solid var(--border); background: var(--card); font-size: 16px; cursor: pointer; }
+  .qty-box input { border: none; text-align: center; font-size: 16px; font-weight: 600; background: transparent; width: 80px; padding: 0; }
+
+  .summary-row { display: flex; justify-content: space-between; font-size: 12.5px; padding: 6px 0; border-bottom: 0.5px solid var(--border); }
+  .summary-row:last-child { border-bottom: none; }
+
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .stat-card { background: var(--bg); border-radius: 10px; padding: 12px; }
+  .stat-card .l { font-size: 11px; color: var(--text-muted); margin-bottom: 3px; }
+  .stat-card .v { font-size: 17px; font-weight: 600; }
+
+  .holding-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .holding-row .l .t { font-size: 13px; font-weight: 600; }
+  .holding-row .l .q { font-size: 11px; color: var(--text-muted); }
+  .holding-row .r { text-align: right; }
+  .holding-row .r .v { font-size: 13px; font-weight: 600; }
+  .holding-row .r .pl { font-size: 11px; }
+  .empty-state { text-align: center; padding: 40px 10px; color: var(--text-muted); font-size: 12.5px; }
+
+  .tx-row { padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .tx-row .top { display: flex; justify-content: space-between; font-size: 13px; }
+  .tx-row .type { font-weight: 600; }
+  .tx-row .type.buy { color: var(--accent); }
+  .tx-row .type.sell { color: var(--danger); }
+  .tx-row .meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .tx-row .reason { font-size: 11.5px; color: var(--text-secondary); margin-top: 4px; background: var(--bg); border-radius: 8px; padding: 6px 8px; }
+
+  .lb-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 0.5px solid var(--border); }
+  .lb-rank { width: 20px; font-size: 12px; color: var(--text-muted); font-weight: 600; text-align: center; }
+  .lb-info { flex: 1; }
+  .lb-name { font-size: 13px; font-weight: 500; }
+  .lb-meta { font-size: 10.5px; color: var(--text-muted); }
+  .lb-return { font-size: 13px; font-weight: 600; }
+  .flag { font-size: 9.5px; padding: 2px 6px; border-radius: 5px; background: var(--amber-bg); color: var(--amber); margin-left: 6px; }
+
+  .reveal-card { background: var(--accent-bg); color: var(--accent-text); border-radius: 10px; padding: 10px 12px; font-size: 12px; margin: 10px 0; }
+  .reveal-card b { font-family: monospace; font-size: 13px; }
+  .small-btn { font-size: 11px; padding: 5px 10px; border-radius: 7px; border: 0.5px solid var(--border); background: transparent; cursor: pointer; font-family: inherit; }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- LOGIN -->
+  <section id="view-login" class="center-pad">
+    <div class="logo-mark">IL</div>
+    <h1>InvestLearn</h1>
+    <p class="subtitle">ระบบจำลองการลงทุนเพื่อการศึกษา</p>
+    <label>รหัสผู้ใช้</label>
+    <input type="text" id="loginId" placeholder="เช่น 25010123" autocomplete="off">
+    <label>รหัสผ่าน</label>
+    <input type="password" id="loginPw" placeholder="••••••••">
+    <div class="error-text" id="loginError" hidden></div>
+    <button class="btn btn-primary" id="btnLogin">เข้าสู่ระบบ</button>
+    <p class="hint-text">ยังไม่มีบัญชี? ติดต่อครูผู้สอนของคุณ</p>
+  </section>
+
+  <!-- FIRST LOGIN - CHANGE PASSWORD -->
+  <section id="view-changepw" class="center-pad" hidden>
+    <div class="logo-mark">IL</div>
+    <h1 id="welcomeName">ยินดีต้อนรับ</h1>
+    <p class="subtitle">เพื่อความปลอดภัย กรุณาตั้งรหัสผ่านใหม่ก่อนเข้าใช้งาน</p>
+    <label>รหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)</label>
+    <input type="password" id="newPw1" placeholder="รหัสผ่านใหม่">
+    <label>ยืนยันรหัสผ่านใหม่</label>
+    <input type="password" id="newPw2" placeholder="ยืนยันอีกครั้ง">
+    <div class="error-text" id="changePwError" hidden></div>
+    <button class="btn btn-primary" id="btnChangePw">ยืนยันและเข้าใช้งาน</button>
+  </section>
+
+  <!-- STUDENT APP -->
+  <section id="view-student" hidden>
+    <header class="topbar">
+      <div><div class="greet" id="topGreet">สวัสดี</div><div class="cash" id="topCash">0</div></div>
+      <button id="btnLogoutStudent">ออกจากระบบ</button>
+    </header>
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="market">ตลาด</button>
+      <button class="tab-btn" data-tab="portfolio">พอร์ต</button>
+      <button class="tab-btn" data-tab="history">ประวัติ</button>
+    </nav>
+    <div class="content">
+      <div id="tab-market"><div id="stockList"></div></div>
+
+      <div id="tab-detail" hidden>
+        <span class="back-link" id="btnBackToMarket">‹ กลับไปตลาด</span>
+        <div class="detail-head">
+          <div><div class="t" id="dTicker"></div><div class="n" id="dName"></div></div>
+          <div class="p" id="dPrice"></div>
+        </div>
+        <div class="range-pills" id="rangePills">
+          <button data-range="1D">1 วัน</button>
+          <button data-range="1M" class="active">1 เดือน</button>
+          <button data-range="6M">6 เดือน</button>
+          <button data-range="1Y">1 ปี</button>
+        </div>
+        <div class="chart-wrap"><svg id="dChart" viewBox="0 0 300 130" preserveAspectRatio="none"><polyline id="dChartLine" fill="none" stroke-width="2"/></svg></div>
+
+        <div class="tabgroup">
+          <button id="btnModeBuy" class="active buy">ซื้อ</button>
+          <button id="btnModeSell" class="sell">ขาย</button>
+        </div>
+        <label>จำนวนหุ้น (หน่วย)</label>
+        <div class="qty-box">
+          <button id="qtyMinus" type="button">−</button>
+          <input type="number" id="qtyInput" value="100" min="0" step="100">
+          <button id="qtyPlus" type="button">+</button>
+        </div>
+        <div class="summary-row"><span>มูลค่ารวม</span><span id="sumValue">0</span></div>
+        <div class="summary-row"><span>ค่าคอมมิชชั่นจำลอง</span><span id="sumFee">0</span></div>
+        <label>เหตุผลการตัดสินใจ (จำเป็นต้องกรอก)</label>
+        <textarea id="reasonInput" placeholder="เช่น P/E ต่ำกว่ากลุ่มพลังงาน และปันผลสูง"></textarea>
+        <div class="error-text" id="tradeError" hidden></div>
+        <button class="btn btn-primary" id="btnConfirmTrade">ยืนยันคำสั่งซื้อ</button>
+      </div>
+
+      <div id="tab-portfolio" hidden>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="l">มูลค่าพอร์ตรวม</div><div class="v" id="pTotal">0</div></div>
+          <div class="stat-card"><div class="l">กำไร/ขาดทุนรวม</div><div class="v" id="pReturn">0%</div></div>
+        </div>
+        <div id="holdingsList"></div>
+      </div>
+
+      <div id="tab-history" hidden><div id="txList"></div></div>
+    </div>
+  </section>
+
+  <!-- TEACHER APP -->
+  <section id="view-teacher" hidden>
+    <header class="topbar">
+      <div><div class="greet">ครูผู้สอน</div><div class="cash" id="teacherName">-</div></div>
+      <button id="btnLogoutTeacher">ออกจากระบบ</button>
+    </header>
+    <div class="content">
+      <p class="subtitle" style="margin-top:0;text-align:left;">สร้างบัญชีนักเรียนใหม่</p>
+      <label>รหัสนักเรียน</label>
+      <input type="text" id="newStudentId" placeholder="เช่น 25010123">
+      <label>ชื่อ-นามสกุล</label>
+      <input type="text" id="newStudentName" placeholder="เช่น ณิชา ใจดี">
+      <div class="error-text" id="createStudentError" hidden></div>
+      <button class="btn btn-primary" id="btnCreateStudent">+ สร้างบัญชี</button>
+      <div id="tempPwReveal"></div>
+
+      <p class="subtitle" style="margin-top:24px;text-align:left;">อันดับนักเรียนทั้งหมด</p>
+      <div id="teacherStudentList"></div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var API = ""; // เสิร์ฟจากโดเมน/พอร์ตเดียวกัน จึงใช้ path สัมพัทธ์ได้เลย
+  var token = localStorage.getItem("il_token") || null;
+  var currentUser = null; // { name, role }
+
+  function fmt(n) { return Math.round(n).toLocaleString("th-TH"); }
+  function fmt2(n) { return Number(n).toFixed(2); }
+
+  async function api(path, options) {
+    options = options || {};
+    var headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
+    if (token) headers["Authorization"] = "Bearer " + token;
+    var res = await fetch(API + path, Object.assign({}, options, { headers: headers }));
+    var data = await res.json().catch(function () { return {}; });
+    if (!res.ok) throw new Error(data.error || "เกิดข้อผิดพลาด");
+    return data;
+  }
+
+  // ---------- views ----------
+  var views = {
+    login: document.getElementById("view-login"),
+    changepw: document.getElementById("view-changepw"),
+    student: document.getElementById("view-student"),
+    teacher: document.getElementById("view-teacher")
+  };
+  function showView(name) {
+    Object.keys(views).forEach(function (k) { views[k].hidden = (k !== name); });
+  }
+
+  // ---------- login ----------
+  document.getElementById("btnLogin").addEventListener("click", async function () {
+    var id = document.getElementById("loginId").value.trim();
+    var pw = document.getElementById("loginPw").value;
+    var errEl = document.getElementById("loginError");
+    errEl.hidden = true;
+    try {
+      var data = await api("/api/login", { method: "POST", body: JSON.stringify({ student_id: id, password: pw }) });
+      token = data.token;
+      localStorage.setItem("il_token", token);
+      currentUser = { name: data.name, role: data.role };
+      if (data.mustChangePassword) {
+        document.getElementById("welcomeName").textContent = "ยินดีต้อนรับ " + data.name;
+        showView("changepw");
+      } else {
+        enterApp();
+      }
+    } catch (e) {
+      errEl.textContent = e.message;
+      errEl.hidden = false;
+    }
+  });
+
+  document.getElementById("btnChangePw").addEventListener("click", async function () {
+    var p1 = document.getElementById("newPw1").value;
+    var p2 = document.getElementById("newPw2").value;
+    var errEl = document.getElementById("changePwError");
+    errEl.hidden = true;
+    if (p1.length < 6) { errEl.textContent = "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร"; errEl.hidden = false; return; }
+    if (p1 !== p2) { errEl.textContent = "รหัสผ่านทั้งสองช่องไม่ตรงกัน"; errEl.hidden = false; return; }
+    try {
+      await api("/api/change-password", { method: "POST", body: JSON.stringify({ newPassword: p1 }) });
+      enterApp();
+    } catch (e) {
+      errEl.textContent = e.message;
+      errEl.hidden = false;
+    }
+  });
+
+  function logout() {
+    api("/api/logout", { method: "POST" }).catch(function () {});
+    token = null;
+    localStorage.removeItem("il_token");
+    document.getElementById("loginId").value = "";
+    document.getElementById("loginPw").value = "";
+    showView("login");
+  }
+  document.getElementById("btnLogoutStudent").addEventListener("click", logout);
+  document.getElementById("btnLogoutTeacher").addEventListener("click", logout);
+
+  async function enterApp() {
+    if (currentUser.role === "teacher") {
+      document.getElementById("teacherName").textContent = currentUser.name;
+      showView("teacher");
+      renderTeacherStudents();
+    } else {
+      document.getElementById("topGreet").textContent = "สวัสดี " + currentUser.name;
+      showView("student");
+      await loadStocks();
+      switchTab("market");
+      refreshCash();
+    }
+  }
+
+  // try to resume session on page load
+  (async function boot() {
+    if (!token) { showView("login"); return; }
+    try {
+      var portfolio = await api("/api/portfolio");
+      // ถ้าเรียกสำเร็จแปลว่าเป็น student ที่ login ค้างไว้
+      currentUser = { name: "", role: "student" };
+      // ต้องรู้ชื่อด้วย แต่ endpoint portfolio ไม่ได้ส่งชื่อมา ลอง fallback
+      document.getElementById("topGreet").textContent = "สวัสดี";
+      showView("student");
+      await loadStocks();
+      switchTab("market");
+      renderPortfolioData(portfolio);
+    } catch (e) {
+      try {
+        var students = await api("/api/teacher/students");
+        currentUser = { name: "", role: "teacher" };
+        showView("teacher");
+        renderStudentListData(students);
+      } catch (e2) {
+        token = null;
+        localStorage.removeItem("il_token");
+        showView("login");
+      }
+    }
+  })();
+
+  // ==================== STUDENT: STOCKS ====================
+  var STOCKS = {};
+
+  async function loadStocks() {
+    var list = await api("/api/stocks");
+    STOCKS = {};
+    list.forEach(function (s) { STOCKS[s.ticker] = s; });
+    renderMarket();
+  }
+
+  async function refreshCash() {
+    try {
+      var p = await api("/api/portfolio");
+      document.getElementById("topCash").textContent = fmt(p.cash) + " บาท";
+    } catch (e) {}
+  }
+
+  var tabButtons = document.querySelectorAll("#view-student .tab-btn");
+  tabButtons.forEach(function (btn) {
+    btn.addEventListener("click", function () { switchTab(btn.getAttribute("data-tab")); });
+  });
+  function switchTab(name) {
+    tabButtons.forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-tab") === name); });
+    document.getElementById("tab-market").hidden = (name !== "market");
+    document.getElementById("tab-detail").hidden = (name !== "detail");
+    document.getElementById("tab-portfolio").hidden = (name !== "portfolio");
+    document.getElementById("tab-history").hidden = (name !== "history");
+    if (name === "portfolio") loadPortfolio();
+    if (name === "history") loadHistory();
+  }
+
+  function renderMarket() {
+    var el = document.getElementById("stockList");
+    el.innerHTML = "";
+    Object.keys(STOCKS).forEach(function (ticker) {
+      var s = STOCKS[ticker];
+      var hist = (s.history && s.history["1M"]) || [];
+      var chg = hist.length > 1 ? ((hist[hist.length - 1] - hist[0]) / hist[0]) * 100 : 0;
+      var up = chg >= 0;
+      var row = document.createElement("div");
+      row.className = "stock-row";
+      row.innerHTML =
+        '<div><div class="name">' + ticker + '</div><div class="sub">' + s.name + '</div></div>' +
+        '<div><div class="price">' + fmt2(s.price) + '</div><div class="chg ' + (up ? "up" : "down") + '">' + (up ? "+" : "") + chg.toFixed(2) + '%</div></div>';
+      row.addEventListener("click", function () { openDetail(ticker); });
+      el.appendChild(row);
+    });
+  }
+
+  var currentTicker = null, currentRange = "1M", tradeMode = "buy";
+
+  function openDetail(ticker) {
+    currentTicker = ticker; currentRange = "1M"; tradeMode = "buy";
+    document.getElementById("dTicker").textContent = ticker;
+    document.getElementById("dName").textContent = STOCKS[ticker].name;
+    document.getElementById("dPrice").textContent = fmt2(STOCKS[ticker].price);
+    document.getElementById("qtyInput").value = 100;
+    document.getElementById("reasonInput").value = "";
+    document.getElementById("tradeError").hidden = true;
+    document.querySelectorAll("#rangePills button").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-range") === "1M"); });
+    setTradeMode("buy");
+    renderChart();
+    updateTradeSummary();
+    switchTab("detail");
+  }
+  document.getElementById("btnBackToMarket").addEventListener("click", function () { switchTab("market"); });
+
+  document.querySelectorAll("#rangePills button").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll("#rangePills button").forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      currentRange = btn.getAttribute("data-range");
+      renderChart();
+    });
+  });
+
+  function renderChart() {
+    var arr = (STOCKS[currentTicker].history && STOCKS[currentTicker].history[currentRange]) || [STOCKS[currentTicker].price];
+    if (arr.length < 2) arr = [arr[0], arr[0]];
+    var min = Math.min.apply(null, arr), max = Math.max.apply(null, arr);
+    var pad = (max - min) * 0.1 || 1;
+    var lo = min - pad, hi = max + pad;
+    var w = 300, h = 130;
+    var pts = arr.map(function (v, i) {
+      var x = (i / (arr.length - 1)) * w;
+      var y = h - ((v - lo) / (hi - lo)) * h;
+      return x.toFixed(1) + "," + y.toFixed(1);
+    }).join(" ");
+    var up = arr[arr.length - 1] >= arr[0];
+    var line = document.getElementById("dChartLine");
+    line.setAttribute("points", pts);
+    line.setAttribute("stroke", up ? "#0f6e56" : "#a32d2d");
+  }
+
+  document.getElementById("btnModeBuy").addEventListener("click", function () { setTradeMode("buy"); });
+  document.getElementById("btnModeSell").addEventListener("click", function () { setTradeMode("sell"); });
+  function setTradeMode(mode) {
+    tradeMode = mode;
+    document.getElementById("btnModeBuy").classList.toggle("active", mode === "buy");
+    document.getElementById("btnModeSell").classList.toggle("active", mode === "sell");
+    document.getElementById("btnConfirmTrade").textContent = mode === "buy" ? "ยืนยันคำสั่งซื้อ" : "ยืนยันคำสั่งขาย";
+    document.getElementById("btnConfirmTrade").className = "btn " + (mode === "buy" ? "btn-primary" : "btn-sell");
+    updateTradeSummary();
+  }
+
+  document.getElementById("qtyInput").addEventListener("input", updateTradeSummary);
+  document.getElementById("qtyMinus").addEventListener("click", function () {
+    var input = document.getElementById("qtyInput");
+    input.value = Math.max(0, parseInt(input.value || "0", 10) - 100);
+    updateTradeSummary();
+  });
+  document.getElementById("qtyPlus").addEventListener("click", function () {
+    var input = document.getElementById("qtyInput");
+    input.value = parseInt(input.value || "0", 10) + 100;
+    updateTradeSummary();
+  });
+
+  function updateTradeSummary() {
+    var qty = parseInt(document.getElementById("qtyInput").value || "0", 10);
+    var price = STOCKS[currentTicker].price;
+    var value = qty * price;
+    var fee = Math.max(value * 0.0015, qty > 0 ? 50 : 0);
+    document.getElementById("sumValue").textContent = fmt(value) + " บาท";
+    document.getElementById("sumFee").textContent = fmt(fee) + " บาท";
+  }
+
+  document.getElementById("btnConfirmTrade").addEventListener("click", async function () {
+    var errEl = document.getElementById("tradeError");
+    errEl.hidden = true;
+    var qty = parseInt(document.getElementById("qtyInput").value || "0", 10);
+    var reason = document.getElementById("reasonInput").value.trim();
+    try {
+      await api("/api/trade", { method: "POST", body: JSON.stringify({ ticker: currentTicker, type: tradeMode, qty: qty, reason: reason }) });
+      await refreshCash();
+      document.getElementById("qtyInput").value = 100;
+      document.getElementById("reasonInput").value = "";
+      switchTab("portfolio");
+    } catch (e) {
+      errEl.textContent = e.message;
+      errEl.hidden = false;
+    }
+  });
+
+  async function loadPortfolio() {
+    try {
+      var p = await api("/api/portfolio");
+      renderPortfolioData(p);
+    } catch (e) {}
+  }
+
+  function renderPortfolioData(p) {
+    document.getElementById("pTotal").textContent = fmt(p.totalValue) + " บาท";
+    var pReturnEl = document.getElementById("pReturn");
+    pReturnEl.textContent = (p.totalReturnPercent >= 0 ? "+" : "") + p.totalReturnPercent.toFixed(2) + "%";
+    pReturnEl.className = "v " + (p.totalReturnPercent >= 0 ? "up" : "down");
+
+    var list = document.getElementById("holdingsList");
+    list.innerHTML = "";
+    if (!p.holdings || p.holdings.length === 0) {
+      list.innerHTML = '<div class="empty-state">ยังไม่มีหุ้นในพอร์ต<br>ลองไปที่แท็บ "ตลาด" เพื่อเริ่มซื้อหุ้นตัวแรก</div>';
+      return;
+    }
+    p.holdings.forEach(function (h) {
+      var row = document.createElement("div");
+      row.className = "holding-row";
+      row.innerHTML =
+        '<div class="l"><div class="t">' + h.ticker + '</div><div class="q">' + h.qty + ' หุ้น · ต้นทุนเฉลี่ย ' + fmt2(h.avgCost) + '</div></div>' +
+        '<div class="r"><div class="v">' + fmt(h.value) + '</div><div class="pl ' + (h.plPercent >= 0 ? "up" : "down") + '">' + (h.plPercent >= 0 ? "+" : "") + h.plPercent.toFixed(2) + '%</div></div>';
+      list.appendChild(row);
+    });
+  }
+
+  async function loadHistory() {
+    try {
+      var txs = await api("/api/transactions");
+      var list = document.getElementById("txList");
+      list.innerHTML = "";
+      if (txs.length === 0) { list.innerHTML = '<div class="empty-state">ยังไม่มีประวัติการซื้อขาย</div>'; return; }
+      txs.forEach(function (tx) {
+        var row = document.createElement("div");
+        row.className = "tx-row";
+        row.innerHTML =
+          '<div class="top"><span class="type ' + tx.type + '">' + (tx.type === "buy" ? "ซื้อ" : "ขาย") + ' ' + tx.ticker + '</span><span>' + fmt(tx.qty * tx.price) + ' บาท</span></div>' +
+          '<div class="meta">' + tx.qty + ' หุ้น @ ' + fmt2(tx.price) + ' · ' + tx.created_at + '</div>' +
+          '<div class="reason">"' + String(tx.reason).replace(/</g, "&lt;") + '"</div>';
+        list.appendChild(row);
+      });
+    } catch (e) {}
+  }
+
+  // ==================== TEACHER ====================
+  document.getElementById("btnCreateStudent").addEventListener("click", async function () {
+    var id = document.getElementById("newStudentId").value.trim();
+    var name = document.getElementById("newStudentName").value.trim();
+    var errEl = document.getElementById("createStudentError");
+    errEl.hidden = true;
+    try {
+      var data = await api("/api/teacher/students", { method: "POST", body: JSON.stringify({ student_id: id, name: name }) });
+      document.getElementById("tempPwReveal").innerHTML =
+        '<div class="reveal-card">สร้างบัญชีสำเร็จ! รหัสผ่านชั่วคราวของ ' + name + ': <b>' + data.tempPassword + '</b><br>แจ้งนักเรียนเป็นการส่วนตัว (จะไม่แสดงซ้ำอีก)</div>';
+      document.getElementById("newStudentId").value = "";
+      document.getElementById("newStudentName").value = "";
+      renderTeacherStudents();
+    } catch (e) {
+      errEl.textContent = e.message;
+      errEl.hidden = false;
+    }
+  });
+
+  async function renderTeacherStudents() {
+    try {
+      var students = await api("/api/teacher/students");
+      renderStudentListData(students);
+    } catch (e) {}
+  }
+
+  function renderStudentListData(students) {
+    var list = document.getElementById("teacherStudentList");
+    list.innerHTML = "";
+    if (students.length === 0) { list.innerHTML = '<div class="empty-state">ยังไม่มีนักเรียนในระบบ</div>'; return; }
+    students.forEach(function (s, i) {
+      var row = document.createElement("div");
+      row.className = "lb-row";
+      var flags = "";
+      if (s.mustChangePassword) flags += '<span class="flag">รอเปลี่ยนรหัสผ่าน</span>';
+      if (s.tradesToday >= 10) flags += '<span class="flag">ซื้อขายถี่วันนี้ ' + s.tradesToday + ' ครั้ง</span>';
+      row.innerHTML =
+        '<div class="lb-rank">' + (i + 1) + '</div>' +
+        '<div class="lb-info"><div class="lb-name">' + s.name + '</div><div class="lb-meta">' + s.studentId + ' · ถือ ' + s.holdingCount + ' ตัว' + flags + '</div></div>' +
+        '<div class="lb-return ' + (s.returnPercent >= 0 ? "up" : "down") + '">' + (s.returnPercent >= 0 ? "+" : "") + s.returnPercent.toFixed(2) + '%</div>' +
+        '<button class="small-btn" data-reset="' + s.studentId + '">รีเซ็ตรหัสผ่าน</button>';
+      list.appendChild(row);
+    });
+    list.querySelectorAll("[data-reset]").forEach(function (btn) {
+      btn.addEventListener("click", async function () {
+        var id = btn.getAttribute("data-reset");
+        try {
+          var data = await api("/api/teacher/students/" + id + "/reset-password", { method: "POST" });
+          document.getElementById("tempPwReveal").innerHTML =
+            '<div class="reveal-card">รหัสผ่านชั่วคราวใหม่ของ ' + id + ': <b>' + data.tempPassword + '</b><br>แจ้งนักเรียนเป็นการส่วนตัว</div>';
+          renderTeacherStudents();
+        } catch (e) { alert(e.message); }
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>
