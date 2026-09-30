@@ -6,15 +6,21 @@
 <title>InvestLearn</title>
 <style>
   :root {
-    --bg: #f4f3ee; --card: #ffffff; --border: #e2e0d6;
-    --text-primary: #26251f; --text-secondary: #6b6a62; --text-muted: #9a988d;
-    --accent: #0f6e56; --accent-bg: #e1f5ee; --accent-text: #085041;
-    --danger: #a32d2d; --danger-bg: #fcebeb;
-    --amber: #854f0b; --amber-bg: #faeeda;
+    --bg: #0e1013; --card: #171a1f; --card-alt: #1e2229; --border: #2a2e37;
+    --text-primary: #eef0f3; --text-secondary: #9aa1ad; --text-muted: #676e7a;
+    --accent: #34d399; --accent-bg: rgba(52,211,153,0.14); --accent-text: #4ade9f;
+    --danger: #f87171; --danger-bg: rgba(248,113,113,0.14);
+    --amber: #fbbf24; --amber-bg: rgba(251,191,36,0.14);
+    --shadow: 0 8px 24px rgba(0,0,0,0.35);
   }
   * { box-sizing: border-box; }
+  *, *::before, *::after { transition: background-color .18s ease, border-color .18s ease, color .18s ease, box-shadow .18s ease, transform .12s ease; }
   body { margin: 0; background: var(--bg); color: var(--text-primary); font-family: -apple-system,"Noto Sans Thai","Segoe UI",sans-serif; }
-  .app-shell { max-width: 420px; margin: 0 auto; min-height: 100vh; background: var(--card); padding-bottom: 30px; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .fade-in { animation: fadeIn .28s ease both; }
+  .spinner { width: 22px; height: 22px; border-radius: 50%; border: 2.5px solid var(--border); border-top-color: var(--accent); animation: spin .7s linear infinite; margin: 30px auto; }
+  .app-shell { max-width: 420px; margin: 0 auto; min-height: 100vh; background: var(--card); padding-bottom: 30px; box-shadow: var(--shadow); }
   .center-pad { padding: 40px 24px; }
   .logo-mark { width: 52px; height: 52px; border-radius: 16px; background: var(--accent-bg); color: var(--accent-text); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 600; margin: 0 auto 12px; }
   h1 { font-size: 17px; font-weight: 600; text-align: center; margin: 0 0 4px; }
@@ -24,10 +30,16 @@
     width: 100%; border: 0.5px solid var(--border); border-radius: 10px; padding: 10px 12px;
     font-size: 13.5px; background: var(--bg); color: var(--text-primary); font-family: inherit;
   }
+  input[type=text]:focus, input[type=password]:focus, input[type=number]:focus, textarea:focus {
+    outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg);
+  }
   textarea { resize: none; height: 60px; }
-  .btn { display: block; width: 100%; text-align: center; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 600; margin-top: 12px; border: none; cursor: pointer; font-family: inherit; }
-  .btn-primary { background: var(--accent); color: #fff; }
+  .btn { display: block; width: 100%; text-align: center; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 600; margin-top: 12px; border: none; cursor: pointer; font-family: inherit; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: #06261c; box-shadow: 0 4px 14px rgba(52,211,153,0.25); }
+  .btn-primary:hover { filter: brightness(1.08); }
   .btn-secondary { background: transparent; border: 0.5px solid var(--border); color: var(--text-primary); }
+  .btn-secondary:hover { background: var(--card-alt); }
   .btn-sell { background: var(--danger); color: #fff; }
   .error-text { font-size: 12px; color: var(--danger); margin-top: 6px; }
   .hint-text { font-size: 11px; color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
@@ -41,9 +53,12 @@
   nav.tabs { display: flex; border-bottom: 0.5px solid var(--border); }
   nav.tabs button { flex: 1; padding: 12px 0; background: none; border: none; font-size: 12.5px; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; font-family: inherit; }
   nav.tabs button.active { color: var(--accent); border-color: var(--accent); font-weight: 600; }
+  nav.tabs button:hover { color: var(--text-primary); }
 
   .content { padding: 16px 18px; }
-  .stock-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 0.5px solid var(--border); cursor: pointer; }
+  .stock-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; margin: 0 -12px; border-radius: 10px; border-bottom: 0.5px solid var(--border); cursor: pointer; }
+  .stock-row:hover { background: var(--card-alt); transform: translateX(2px); }
+  .stock-row:active { transform: scale(0.99); }
   .stock-row .name { font-size: 13.5px; font-weight: 600; }
   .stock-row .sub { font-size: 11px; color: var(--text-muted); }
   .stock-row .price { font-size: 13.5px; font-weight: 600; text-align: right; }
@@ -58,17 +73,20 @@
 
   .range-pills { display: flex; gap: 6px; margin: 10px 0; }
   .range-pills button { flex: 1; font-size: 11.5px; padding: 6px 0; border-radius: 8px; border: 0.5px solid var(--border); background: transparent; color: var(--text-secondary); font-family: inherit; cursor: pointer; }
-  .range-pills button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .range-pills button.active { background: var(--accent); color: #06261c; border-color: var(--accent); font-weight: 600; }
+  .range-pills button:hover { border-color: var(--accent); }
   .chart-wrap { height: 140px; border: 0.5px solid var(--border); border-radius: 10px; padding: 8px; margin-bottom: 14px; }
   .chart-wrap svg { width: 100%; height: 100%; }
 
   .tabgroup { display: flex; gap: 8px; margin-bottom: 12px; }
   .tabgroup button { flex: 1; padding: 9px 0; border-radius: 8px; border: 0.5px solid var(--border); background: transparent; font-size: 13px; font-family: inherit; cursor: pointer; color: var(--text-primary); }
-  .tabgroup button.active.buy { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tabgroup button.active.buy { background: var(--accent); border-color: var(--accent); color: #06261c; }
   .tabgroup button.active.sell { background: var(--danger); border-color: var(--danger); color: #fff; }
 
   .qty-box { display: flex; align-items: center; justify-content: space-between; border: 0.5px solid var(--border); border-radius: 10px; padding: 6px 10px; margin: 6px 0; }
   .qty-box button { width: 30px; height: 30px; border-radius: 50%; border: 0.5px solid var(--border); background: var(--card); font-size: 16px; cursor: pointer; }
+  .qty-box button:hover { border-color: var(--accent); color: var(--accent); }
+  .qty-box button:active { transform: scale(0.9); }
   .qty-box input { border: none; text-align: center; font-size: 16px; font-weight: 600; background: transparent; width: 80px; padding: 0; }
 
   .summary-row { display: flex; justify-content: space-between; font-size: 12.5px; padding: 6px 0; border-bottom: 0.5px solid var(--border); }
@@ -79,7 +97,8 @@
   .stat-card .l { font-size: 11px; color: var(--text-muted); margin-bottom: 3px; }
   .stat-card .v { font-size: 17px; font-weight: 600; }
 
-  .holding-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .holding-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; margin: 0 -12px; border-radius: 10px; border-bottom: 0.5px solid var(--border); }
+  .holding-row:hover { background: var(--card-alt); }
   .holding-row .l .t { font-size: 13px; font-weight: 600; }
   .holding-row .l .q { font-size: 11px; color: var(--text-muted); }
   .holding-row .r { text-align: right; }
@@ -106,13 +125,17 @@
   .reveal-card { background: var(--accent-bg); color: var(--accent-text); border-radius: 10px; padding: 10px 12px; font-size: 12px; margin: 10px 0; }
   .reveal-card b { font-family: monospace; font-size: 13px; }
   .small-btn { font-size: 11px; padding: 5px 10px; border-radius: 7px; border: 0.5px solid var(--border); background: transparent; cursor: pointer; font-family: inherit; }
+  .small-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .small-btn:active { transform: scale(0.95); }
 
   .search-bar { display: flex; align-items: center; gap: 6px; border: 0.5px solid var(--border); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; background: var(--bg); }
+  .search-bar:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
   .search-bar input { border: none; background: transparent; font-size: 13px; flex: 1; color: var(--text-primary); font-family: inherit; padding: 0; }
   .search-bar input:focus { outline: none; }
   .filter-row { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 6px; }
   .filter-pill { flex-shrink: 0; font-size: 11.5px; padding: 6px 11px; border-radius: 20px; border: 0.5px solid var(--border); background: transparent; color: var(--text-secondary); font-family: inherit; cursor: pointer; }
-  .filter-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .filter-pill:hover { border-color: var(--accent); color: var(--text-primary); }
+  .filter-pill.active { background: var(--accent); color: #06261c; border-color: var(--accent); font-weight: 600; }
   .sort-select { font-size: 12px; border: 0.5px solid var(--border); border-radius: 8px; padding: 6px 8px; background: var(--card); color: var(--text-primary); font-family: inherit; margin-bottom: 10px; width: 100%; }
   .no-results { text-align: center; padding: 30px 10px; color: var(--text-muted); font-size: 12.5px; }
 
@@ -385,6 +408,7 @@
   var STOCKS = {};
 
   async function loadStocks() {
+    document.getElementById("stockList").innerHTML = '<div class="spinner"></div>';
     var list = await api("/api/stocks");
     STOCKS = {};
     list.forEach(function (s) { STOCKS[s.ticker] = s; });
@@ -410,6 +434,12 @@
     document.getElementById("tab-detail").hidden = (name !== "detail");
     document.getElementById("tab-portfolio").hidden = (name !== "portfolio");
     document.getElementById("tab-history").hidden = (name !== "history");
+    var activeEl = document.getElementById("tab-" + name);
+    if (activeEl) {
+      activeEl.classList.remove("fade-in");
+      void activeEl.offsetWidth; // force reflow so the animation replays every time
+      activeEl.classList.add("fade-in");
+    }
     if (name === "portfolio") loadPortfolio();
     if (name === "history") loadHistory();
     if (name === "featured") renderFeatured();
