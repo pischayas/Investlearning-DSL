@@ -49,6 +49,10 @@ async function init() {
       name TEXT NOT NULL,
       price REAL NOT NULL,
       sector TEXT,
+      pe_ratio REAL,
+      pb_ratio REAL,
+      dividend_yield REAL,
+      market_cap REAL,
       history_json TEXT NOT NULL DEFAULT '{}',
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     )`,
@@ -59,6 +63,25 @@ async function init() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )`
   ]);
+
+  // Migration: เติมคอลัมน์ใหม่ให้ฐานข้อมูลเก่าที่สร้างไว้ก่อนหน้านี้ (เช่น Turso ที่ deploy ไปแล้ว)
+  // ทำแบบ try/catch ทีละคอลัมน์ เพราะ libSQL ไม่รองรับ "ADD COLUMN IF NOT EXISTS"
+  const migrations = [
+    "ALTER TABLE stocks ADD COLUMN pe_ratio REAL",
+    "ALTER TABLE stocks ADD COLUMN pb_ratio REAL",
+    "ALTER TABLE stocks ADD COLUMN dividend_yield REAL",
+    "ALTER TABLE stocks ADD COLUMN market_cap REAL"
+  ];
+  for (const sql of migrations) {
+    try {
+      await client.execute(sql);
+    } catch (e) {
+      // ข้ามได้ถ้า error เพราะคอลัมน์มีอยู่แล้ว (duplicate column name)
+      if (!/duplicate column/i.test(e.message)) {
+        console.error("Migration warning:", e.message);
+      }
+    }
+  }
 }
 
 // ---------- helper functions (คงหน้าตา API คล้ายเดิม แต่เป็น async ทั้งหมด) ----------

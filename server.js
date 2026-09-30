@@ -99,12 +99,16 @@ app.post("/api/logout", auth, wrap(async (req, res) => {
 // ==================== STOCKS (ทุกคนดูได้ ไม่ต้อง login) ====================
 
 app.get("/api/stocks", wrap(async (req, res) => {
-  const rows = await db.all("SELECT ticker, name, price, sector, history_json FROM stocks ORDER BY ticker", []);
+  const rows = await db.all("SELECT ticker, name, price, sector, pe_ratio, pb_ratio, dividend_yield, market_cap, history_json FROM stocks ORDER BY ticker", []);
   res.json(rows.map(r => ({
     ticker: r.ticker,
     name: r.name,
     price: r.price,
     sector: r.sector,
+    peRatio: r.pe_ratio,
+    pbRatio: r.pb_ratio,
+    dividendYield: r.dividend_yield,
+    marketCap: r.market_cap,
     history: JSON.parse(r.history_json || "{}")
   })));
 }));

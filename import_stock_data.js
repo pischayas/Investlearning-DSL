@@ -15,10 +15,12 @@ const db = require("./db");
 const DATA_FILE = path.join(__dirname, "set_data.json");
 
 const UPSERT_SQL = `
-  INSERT INTO stocks (ticker, name, price, sector, history_json, updated_at)
-  VALUES (?, ?, ?, ?, ?, datetime('now'))
+  INSERT INTO stocks (ticker, name, price, sector, pe_ratio, pb_ratio, dividend_yield, market_cap, history_json, updated_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
   ON CONFLICT(ticker) DO UPDATE SET
     name = excluded.name, price = excluded.price, sector = excluded.sector,
+    pe_ratio = excluded.pe_ratio, pb_ratio = excluded.pb_ratio,
+    dividend_yield = excluded.dividend_yield, market_cap = excluded.market_cap,
     history_json = excluded.history_json, updated_at = excluded.updated_at
 `;
 
@@ -40,7 +42,17 @@ async function seedFromRealData() {
       "1Y": h1y
     };
 
-    await db.run(UPSERT_SQL, [ticker, r.name || ticker, Math.round(price * 100) / 100, r.sector || null, JSON.stringify(history)]);
+    await db.run(UPSERT_SQL, [
+      ticker,
+      r.name || ticker,
+      Math.round(price * 100) / 100,
+      r.sector || null,
+      r.pe_ratio ?? null,
+      r.pb_ratio ?? null,
+      r.dividend_yield ?? null,
+      r.market_cap ?? null,
+      JSON.stringify(history)
+    ]);
     count++;
   }
   console.log(`นำเข้าข้อมูลจริงจาก set_data.json สำเร็จ: ${count} บริษัท`);
@@ -48,11 +60,11 @@ async function seedFromRealData() {
 
 async function seedMockData() {
   const MOCK = {
-    PTT:    { name: "ปตท.",           price: 34.50, sector: "Energy" },
-    AOT:    { name: "ท่าอากาศยานไทย", price: 66.00, sector: "Industrials" },
-    KBANK:  { name: "กสิกรไทย",       price: 143.00, sector: "Financials" },
-    CPALL:  { name: "ซีพี ออลล์",     price: 58.25, sector: "Consumer Staples" },
-    ADVANC: { name: "แอดวานซ์",       price: 282.00, sector: "Communication" }
+    PTT:    { name: "ปตท.",           price: 34.50, sector: "Energy",           pe: 8.4,  pb: 0.9, div: 0.042, cap: 980000000000 },
+    AOT:    { name: "ท่าอากาศยานไทย", price: 66.00, sector: "Industrials",      pe: 32.1, pb: 5.2, div: 0.012, cap: 950000000000 },
+    KBANK:  { name: "กสิกรไทย",       price: 143.00, sector: "Financials",      pe: 7.8,  pb: 0.7, div: 0.048, cap: 340000000000 },
+    CPALL:  { name: "ซีพี ออลล์",     price: 58.25, sector: "Consumer Staples", pe: 24.6, pb: 4.1, div: 0.021, cap: 630000000000 },
+    ADVANC: { name: "แอดวานซ์",       price: 282.00, sector: "Communication",   pe: 18.3, pb: 8.6, div: 0.035, cap: 780000000000 }
   };
 
   function randomWalk(base, n, vol) {
@@ -74,7 +86,7 @@ async function seedMockData() {
       "6M": randomWalk(s.price, 26, 0.02),
       "1Y": randomWalk(s.price, 30, 0.03)
     };
-    await db.run(UPSERT_SQL, [ticker, s.name, s.price, s.sector, JSON.stringify(history)]);
+    await db.run(UPSERT_SQL, [ticker, s.name, s.price, s.sector, s.pe, s.pb, s.div, s.cap, JSON.stringify(history)]);
   }
   console.log(`ไม่พบ set_data.json — สร้างข้อมูลจำลอง ${Object.keys(MOCK).length} บริษัทแทน (ใช้ทดสอบระบบได้)`);
 }

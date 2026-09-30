@@ -106,6 +106,26 @@
   .reveal-card { background: var(--accent-bg); color: var(--accent-text); border-radius: 10px; padding: 10px 12px; font-size: 12px; margin: 10px 0; }
   .reveal-card b { font-family: monospace; font-size: 13px; }
   .small-btn { font-size: 11px; padding: 5px 10px; border-radius: 7px; border: 0.5px solid var(--border); background: transparent; cursor: pointer; font-family: inherit; }
+
+  .search-bar { display: flex; align-items: center; gap: 6px; border: 0.5px solid var(--border); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; background: var(--bg); }
+  .search-bar input { border: none; background: transparent; font-size: 13px; flex: 1; color: var(--text-primary); font-family: inherit; padding: 0; }
+  .search-bar input:focus { outline: none; }
+  .filter-row { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 6px; }
+  .filter-pill { flex-shrink: 0; font-size: 11.5px; padding: 6px 11px; border-radius: 20px; border: 0.5px solid var(--border); background: transparent; color: var(--text-secondary); font-family: inherit; cursor: pointer; }
+  .filter-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .sort-select { font-size: 12px; border: 0.5px solid var(--border); border-radius: 8px; padding: 6px 8px; background: var(--card); color: var(--text-primary); font-family: inherit; margin-bottom: 10px; width: 100%; }
+  .no-results { text-align: center; padding: 30px 10px; color: var(--text-muted); font-size: 12.5px; }
+
+  .featured-section-title { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin: 18px 0 8px; }
+  .featured-section-title:first-child { margin-top: 0; }
+  .featured-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 0.5px solid var(--border); cursor: pointer; }
+  .featured-row .f-left { display: flex; align-items: center; gap: 8px; }
+  .featured-rank { font-size: 11px; color: var(--text-muted); width: 16px; }
+  .featured-row .f-ticker { font-size: 13px; font-weight: 600; }
+  .featured-row .f-name { font-size: 10.5px; color: var(--text-muted); }
+  .featured-row .f-right { text-align: right; }
+  .featured-row .f-price { font-size: 13px; font-weight: 600; }
+  .featured-row .f-metric { font-size: 11px; }
 </style>
 </head>
 <body>
@@ -146,11 +166,30 @@
     </header>
     <nav class="tabs">
       <button class="tab-btn active" data-tab="market">ตลาด</button>
+      <button class="tab-btn" data-tab="featured">หุ้นเด่น</button>
       <button class="tab-btn" data-tab="portfolio">พอร์ต</button>
       <button class="tab-btn" data-tab="history">ประวัติ</button>
     </nav>
     <div class="content">
-      <div id="tab-market"><div id="stockList"></div></div>
+      <div id="tab-market">
+        <div class="search-bar">
+          🔍 <input type="text" id="stockSearch" placeholder="ค้นหาด้วยชื่อย่อหรือชื่อบริษัท">
+        </div>
+        <div class="filter-row" id="sectorFilterRow"></div>
+        <select class="sort-select" id="sortSelect">
+          <option value="ticker">เรียงตามชื่อย่อ (ก-ฮ)</option>
+          <option value="gain">เปลี่ยนแปลงมากสุด (ขึ้น)</option>
+          <option value="loss">เปลี่ยนแปลงมากสุด (ลง)</option>
+          <option value="pe_low">P/E ต่ำสุด</option>
+          <option value="div_high">ปันผลสูงสุด</option>
+          <option value="cap_high">มูลค่าตลาดสูงสุด</option>
+        </select>
+        <div id="stockList"></div>
+      </div>
+
+      <div id="tab-featured" hidden>
+        <div id="featuredContent"></div>
+      </div>
 
       <div id="tab-detail" hidden>
         <span class="back-link" id="btnBackToMarket">‹ กลับไปตลาด</span>
@@ -349,6 +388,7 @@
     var list = await api("/api/stocks");
     STOCKS = {};
     list.forEach(function (s) { STOCKS[s.ticker] = s; });
+    renderSectorFilters();
     renderMarket();
   }
 
@@ -366,20 +406,85 @@
   function switchTab(name) {
     tabButtons.forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-tab") === name); });
     document.getElementById("tab-market").hidden = (name !== "market");
+    document.getElementById("tab-featured").hidden = (name !== "featured");
     document.getElementById("tab-detail").hidden = (name !== "detail");
     document.getElementById("tab-portfolio").hidden = (name !== "portfolio");
     document.getElementById("tab-history").hidden = (name !== "history");
     if (name === "portfolio") loadPortfolio();
     if (name === "history") loadHistory();
+    if (name === "featured") renderFeatured();
   }
+
+  function changePercent(s) {
+    var hist = (s.history && s.history["1M"]) || [];
+    if (hist.length < 2) return 0;
+    return ((hist[hist.length - 1] - hist[0]) / hist[0]) * 100;
+  }
+
+  var activeSector = "ทั้งหมด";
+
+  function renderSectorFilters() {
+    var sectors = {};
+    Object.keys(STOCKS).forEach(function (t) {
+      var sec = STOCKS[t].sector || "อื่นๆ";
+      sectors[sec] = true;
+    });
+    var list = ["ทั้งหมด"].concat(Object.keys(sectors).sort());
+    var row = document.getElementById("sectorFilterRow");
+    row.innerHTML = "";
+    list.forEach(function (sec) {
+      var pill = document.createElement("button");
+      pill.className = "filter-pill" + (sec === activeSector ? " active" : "");
+      pill.textContent = sec;
+      pill.addEventListener("click", function () {
+        activeSector = sec;
+        renderSectorFilters();
+        renderMarket();
+      });
+      row.appendChild(pill);
+    });
+  }
+
+  document.getElementById("stockSearch").addEventListener("input", renderMarket);
+  document.getElementById("sortSelect").addEventListener("change", renderMarket);
 
   function renderMarket() {
     var el = document.getElementById("stockList");
     el.innerHTML = "";
-    Object.keys(STOCKS).forEach(function (ticker) {
+
+    var query = (document.getElementById("stockSearch").value || "").trim().toLowerCase();
+    var sortBy = document.getElementById("sortSelect").value;
+
+    var tickers = Object.keys(STOCKS).filter(function (ticker) {
       var s = STOCKS[ticker];
-      var hist = (s.history && s.history["1M"]) || [];
-      var chg = hist.length > 1 ? ((hist[hist.length - 1] - hist[0]) / hist[0]) * 100 : 0;
+      if (activeSector !== "ทั้งหมด" && (s.sector || "อื่นๆ") !== activeSector) return false;
+      if (!query) return true;
+      return ticker.toLowerCase().indexOf(query) !== -1 || (s.name || "").toLowerCase().indexOf(query) !== -1;
+    });
+
+    tickers.sort(function (a, b) {
+      var sa = STOCKS[a], sb = STOCKS[b];
+      switch (sortBy) {
+        case "gain": return changePercent(sb) - changePercent(sa);
+        case "loss": return changePercent(sa) - changePercent(sb);
+        case "pe_low":
+          if (sa.peRatio == null) return 1;
+          if (sb.peRatio == null) return -1;
+          return sa.peRatio - sb.peRatio;
+        case "div_high": return (sb.dividendYield || 0) - (sa.dividendYield || 0);
+        case "cap_high": return (sb.marketCap || 0) - (sa.marketCap || 0);
+        default: return a.localeCompare(b);
+      }
+    });
+
+    if (tickers.length === 0) {
+      el.innerHTML = '<div class="no-results">ไม่พบหุ้นที่ตรงกับเงื่อนไขนี้</div>';
+      return;
+    }
+
+    tickers.forEach(function (ticker) {
+      var s = STOCKS[ticker];
+      var chg = changePercent(s);
       var up = chg >= 0;
       var row = document.createElement("div");
       row.className = "stock-row";
@@ -388,6 +493,67 @@
         '<div><div class="price">' + fmt2(s.price) + '</div><div class="chg ' + (up ? "up" : "down") + '">' + (up ? "+" : "") + chg.toFixed(2) + '%</div></div>';
       row.addEventListener("click", function () { openDetail(ticker); });
       el.appendChild(row);
+    });
+  }
+
+  function featuredRow(ticker, metricLabel) {
+    var s = STOCKS[ticker];
+    var row = document.createElement("div");
+    row.className = "featured-row";
+    row.innerHTML =
+      '<div class="f-left"><div><div class="f-ticker">' + ticker + '</div><div class="f-name">' + s.name + '</div></div></div>' +
+      '<div class="f-right"><div class="f-price">' + fmt2(s.price) + '</div><div class="f-metric">' + metricLabel + '</div></div>';
+    row.addEventListener("click", function () { openDetail(ticker); });
+    return row;
+  }
+
+  function renderFeatured() {
+    var el = document.getElementById("featuredContent");
+    el.innerHTML = "";
+    var all = Object.keys(STOCKS);
+    if (all.length === 0) { el.innerHTML = '<div class="no-results">ยังไม่มีข้อมูลหุ้น</div>'; return; }
+
+    function section(title, tickers, metricFn) {
+      var h = document.createElement("div");
+      h.className = "featured-section-title";
+      h.textContent = title;
+      el.appendChild(h);
+      if (tickers.length === 0) {
+        var empty = document.createElement("div");
+        empty.className = "no-results";
+        empty.style.padding = "10px";
+        empty.textContent = "ไม่มีข้อมูลเพียงพอ";
+        el.appendChild(empty);
+        return;
+      }
+      tickers.forEach(function (t) {
+        var row = featuredRow(t, metricFn(STOCKS[t]));
+        row.querySelector(".f-metric").className += (metricFn(STOCKS[t]).indexOf("+") === 0 ? " up" : (metricFn(STOCKS[t]).indexOf("-") === 0 ? " down" : ""));
+        el.appendChild(row);
+      });
+    }
+
+    var byGain = all.slice().sort(function (a, b) { return changePercent(STOCKS[b]) - changePercent(STOCKS[a]); });
+    section("🚀 เปลี่ยนแปลงมากสุด (ขึ้น) — 1 เดือน", byGain.slice(0, 5), function (s) {
+      var c = changePercent(s); return (c >= 0 ? "+" : "") + c.toFixed(2) + "%";
+    });
+
+    var byLoss = all.slice().sort(function (a, b) { return changePercent(STOCKS[a]) - changePercent(STOCKS[b]); });
+    section("📉 เปลี่ยนแปลงมากสุด (ลง) — 1 เดือน", byLoss.slice(0, 5), function (s) {
+      var c = changePercent(s); return (c >= 0 ? "+" : "") + c.toFixed(2) + "%";
+    });
+
+    var byDiv = all.filter(function (t) { return STOCKS[t].dividendYield != null; })
+      .sort(function (a, b) { return STOCKS[b].dividendYield - STOCKS[a].dividendYield; });
+    section("💰 ปันผลสูงสุด", byDiv.slice(0, 5), function (s) {
+      return s.dividendYield != null ? (s.dividendYield * 100).toFixed(2) + "%" : "-";
+    });
+
+    var byCap = all.filter(function (t) { return STOCKS[t].marketCap != null; })
+      .sort(function (a, b) { return STOCKS[b].marketCap - STOCKS[a].marketCap; });
+    section("🏢 มูลค่าตลาดสูงสุด", byCap.slice(0, 5), function (s) {
+      if (s.marketCap == null) return "-";
+      return (s.marketCap / 1e9).toFixed(1) + " พันล้าน";
     });
   }
 
