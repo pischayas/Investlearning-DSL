@@ -1,1 +1,49 @@
+# .github/workflows/update-stock-data.yml
+#
+# อัปเดตข้อมูลหุ้นเข้า Turso อัตโนมัติทุกวัน ไม่ต้องรันเองบนเครื่อง
+#
+# ทำงาน 2 แบบ:
+#   1. อัตโนมัติตามเวลา (schedule) — ทุกวันจันทร์-ศุกร์ 17:00 น. เวลาไทย (หลังตลาดปิด)
+#   2. กดรันเองได้ทุกเมื่อจากแท็บ Actions บน GitHub (workflow_dispatch)
+#
+# ก่อนใช้งานต้องตั้งค่า Secrets 2 ตัวใน repo ก่อน (ดูวิธีในคำอธิบายที่แนบมา)
 
+name: Update Stock Data
+
+on:
+  schedule:
+    # เวลาที่ตั้งไว้เป็น UTC เสมอ: 10:00 UTC = 17:00 น. เวลาไทย (UTC+7)
+    - cron: '0 10 * * 1-5'
+  workflow_dispatch: {}
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Python dependencies
+        run: pip install yfinance financedatabase pandas
+
+      - name: Install Node dependencies
+        run: npm install
+
+      - name: Fetch latest stock data from Yahoo Finance
+        run: python fetch_set_data.py --output set_data.json
+
+      - name: Import into Turso
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: node import_stock_data.js
