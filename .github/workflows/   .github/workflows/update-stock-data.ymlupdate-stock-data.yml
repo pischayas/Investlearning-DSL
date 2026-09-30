@@ -1,24 +1,30 @@
 # .github/workflows/update-stock-data.yml
 #
-# อัปเดตข้อมูลหุ้นเข้า Turso อัตโนมัติทุกวัน ไม่ต้องรันเองบนเครื่อง
+# อัปเดตข้อมูลหุ้นเข้า Turso อัตโนมัติวันละ 3 ครั้ง
+# เวลาไทย: 10:00 น., 13:00 น. และ 16:00 น.
 #
 # ทำงาน 2 แบบ:
-#   1. อัตโนมัติตามเวลา (schedule) — ทุกวันจันทร์-ศุกร์ 17:00 น. เวลาไทย (หลังตลาดปิด)
-#   2. กดรันเองได้ทุกเมื่อจากแท็บ Actions บน GitHub (workflow_dispatch)
-#
-# ก่อนใช้งานต้องตั้งค่า Secrets 2 ตัวใน repo ก่อน (ดูวิธีในคำอธิบายที่แนบมา)
+#   1. อัตโนมัติ จันทร์-ศุกร์
+#   2. กดรันเองได้จากแท็บ Actions บน GitHub
 
 name: Update Stock Data
 
 on:
   schedule:
-    # เวลาที่ตั้งไว้เป็น UTC เสมอ: 10:00 UTC = 17:00 น. เวลาไทย (UTC+7)
-    - cron: '0 10 * * 1-5'
+    # GitHub Actions ใช้เวลา UTC
+    # 03:00 UTC = 10:00 น. เวลาไทย
+    # 06:00 UTC = 13:00 น. เวลาไทย
+    # 09:00 UTC = 16:00 น. เวลาไทย
+    - cron: '0 3 * * 1-5'
+    - cron: '0 6 * * 1-5'
+    - cron: '0 9 * * 1-5'
+
   workflow_dispatch: {}
 
 jobs:
   update-data:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
