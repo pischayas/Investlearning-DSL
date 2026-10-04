@@ -111,6 +111,7 @@
   .tx-row .type { font-weight: 600; }
   .tx-row .type.buy { color: var(--accent); }
   .tx-row .type.sell { color: var(--danger); }
+  .tx-row .type.dividend { color: var(--amber); }
   .tx-row .meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
   .tx-row .reason { font-size: 11.5px; color: var(--text-secondary); margin-top: 4px; background: var(--bg); border-radius: 8px; padding: 6px 8px; }
 
@@ -228,7 +229,15 @@
         </div>
         <div class="chart-wrap"><svg id="dChart" viewBox="0 0 300 130" preserveAspectRatio="none"><polyline id="dChartLine" fill="none" stroke-width="2"/></svg></div>
 
-        <div class="tabgroup">
+        <div class="summary-row"><span>ราคาเสนอซื้อ (ที่คุณจะซื้อได้)</span><span id="dBuyPrice">กำลังโหลด...</span></div>
+        <div class="summary-row"><span>ราคาเสนอขาย (ที่คุณจะขายได้)</span><span id="dSellPrice">กำลังโหลด...</span></div>
+        <div class="summary-row"><span>P/E</span><span id="dPE">-</span></div>
+        <div class="summary-row"><span>อัตราปันผล</span><span id="dDivYield">-</span></div>
+
+        <p class="section-title" style="font-size:12.5px;font-weight:600;color:var(--text-secondary);margin:14px 0 6px;">ประวัติการจ่ายปันผล (ข้อมูลจริง)</p>
+        <div id="dividendHistoryList"></div>
+
+        <div class="tabgroup" style="margin-top:14px;">
           <button id="btnModeBuy" class="active buy">ซื้อ</button>
           <button id="btnModeSell" class="sell">ขาย</button>
         </div>
@@ -247,9 +256,10 @@
       </div>
 
       <div id="tab-portfolio" hidden>
-        <div class="stat-grid">
+        <div class="stat-grid" style="grid-template-columns: 1fr 1fr 1fr;">
           <div class="stat-card"><div class="l">มูลค่าพอร์ตรวม</div><div class="v" id="pTotal">0</div></div>
           <div class="stat-card"><div class="l">กำไร/ขาดทุนรวม</div><div class="v" id="pReturn">0%</div></div>
+          <div class="stat-card"><div class="l">ปันผลสะสม</div><div class="v" id="pDividends">0</div></div>
         </div>
         <div id="holdingsList"></div>
       </div>
@@ -594,6 +604,8 @@
     document.getElementById("dTicker").textContent = ticker;
     document.getElementById("dName").textContent = STOCKS[ticker].name;
     document.getElementById("dPrice").textContent = fmt2(STOCKS[ticker].price);
+    document.getElementById("dPE").textContent = STOCKS[ticker].peRatio != null ? STOCKS[ticker].peRatio.toFixed(1) : "ไม่มีข้อมูล";
+    document.getElementById("dDivYield").textContent = STOCKS[ticker].dividendYield != null ? (STOCKS[ticker].dividendYield * 100).toFixed(2) + "%" : "ไม่มีข้อมูล";
     document.getElementById("qtyInput").value = 100;
     document.getElementById("reasonInput").value = "";
     document.getElementById("tradeError").hidden = true;
@@ -602,8 +614,44 @@
     renderChart();
     updateTradeSummary();
     switchTab("detail");
+    loadStockDetail(ticker);
   }
   document.getElementById("btnBackToMarket").addEventListener("click", function () { switchTab("market"); });
+
+  async function loadStockDetail(ticker) {
+    document.getElementById("dBuyPrice").textContent = "กำลังโหลด...";
+    document.getElementById("dSellPrice").textContent = "กำลังโหลด...";
+    var divEl = document.getElementById("dividendHistoryList");
+    divEl.innerHTML = '<div class="spinner" style="margin:14px auto;width:18px;height:18px;"></div>';
+
+    try {
+      var detail = await api("/api/stocks/" + ticker);
+
+      // เก็บราคาซื้อ/ขายจริงไว้ใช้คำนวณในหน้าซื้อขาย
+      STOCKS[ticker].buyPrice = detail.buyPrice;
+      STOCKS[ticker].sellPrice = detail.sellPrice;
+      document.getElementById("dBuyPrice").textContent = fmt2(detail.buyPrice) + " บาท";
+      document.getElementById("dSellPrice").textContent = fmt2(detail.sellPrice) + " บาท";
+      if (currentTicker === ticker) updateTradeSummary();
+
+      var divs = detail.dividendHistory || [];
+      if (divs.length === 0) {
+        divEl.innerHTML = '<div class="empty-state" style="padding:14px 0;">ไม่มีประวัติการจ่ายปันผลในช่วง 3 ปีที่ผ่านมา</div>';
+      } else {
+        divEl.innerHTML = "";
+        divs.forEach(function (d) {
+          var row = document.createElement("div");
+          row.className = "summary-row";
+          row.innerHTML = '<span>' + d.date + '</span><span>' + d.amountPerShare.toFixed(2) + ' บาท/หุ้น</span>';
+          divEl.appendChild(row);
+        });
+      }
+    } catch (e) {
+      document.getElementById("dBuyPrice").textContent = "-";
+      document.getElementById("dSellPrice").textContent = "-";
+      divEl.innerHTML = '<div class="empty-state" style="padding:14px 0;">โหลดข้อมูลไม่สำเร็จ</div>';
+    }
+  }
 
   document.querySelectorAll("#rangePills button").forEach(function (btn) {
     btn.addEventListener("click", function () {
@@ -657,10 +705,13 @@
 
   function updateTradeSummary() {
     var qty = parseInt(document.getElementById("qtyInput").value || "0", 10);
-    var price = STOCKS[currentTicker].price;
+    var s = STOCKS[currentTicker];
+    var price = tradeMode === "buy"
+      ? (s.buyPrice != null ? s.buyPrice : s.price)
+      : (s.sellPrice != null ? s.sellPrice : s.price);
     var value = qty * price;
-    var fee = Math.max(value * 0.0015, qty > 0 ? 50 : 0);
-    document.getElementById("sumValue").textContent = fmt(value) + " บาท";
+    var fee = value * 0.0015;
+    document.getElementById("sumValue").textContent = fmt(value) + " บาท (ราคา " + fmt2(price) + "/หุ้น)";
     document.getElementById("sumFee").textContent = fmt(fee) + " บาท";
   }
 
@@ -693,6 +744,7 @@
     var pReturnEl = document.getElementById("pReturn");
     pReturnEl.textContent = (p.totalReturnPercent >= 0 ? "+" : "") + p.totalReturnPercent.toFixed(2) + "%";
     pReturnEl.className = "v " + (p.totalReturnPercent >= 0 ? "up" : "down");
+    document.getElementById("pDividends").textContent = fmt(p.totalDividendsReceived || 0) + " บาท";
 
     var list = document.getElementById("holdingsList");
     list.innerHTML = "";
@@ -719,10 +771,21 @@
       txs.forEach(function (tx) {
         var row = document.createElement("div");
         row.className = "tx-row";
-        row.innerHTML =
-          '<div class="top"><span class="type ' + tx.type + '">' + (tx.type === "buy" ? "ซื้อ" : "ขาย") + ' ' + tx.ticker + '</span><span>' + fmt(tx.qty * tx.price) + ' บาท</span></div>' +
-          '<div class="meta">' + tx.qty + ' หุ้น @ ' + fmt2(tx.price) + ' · ' + tx.created_at + '</div>' +
-          '<div class="reason">"' + String(tx.reason).replace(/</g, "&lt;") + '"</div>';
+        if (tx.kind === "dividend") {
+          row.innerHTML =
+            '<div class="top"><span class="type dividend">เงินปันผล ' + tx.ticker + '</span><span class="up">+' + fmt(tx.totalAmount) + ' บาท</span></div>' +
+            '<div class="meta">' + tx.qty + ' หุ้น × ' + fmt2(tx.amountPerShare) + ' บาท/หุ้น · ' + tx.created_at + '</div>';
+        } else if (tx.kind === "delisting") {
+          row.innerHTML =
+            '<div class="top"><span class="type sell">หุ้นถูกเพิกถอน ' + tx.ticker + '</span><span class="down">-' + fmt(tx.lostValue) + ' บาท</span></div>' +
+            '<div class="meta">เคยถือ ' + tx.qty + ' หุ้น · มูลค่าที่เคยลงทุนสูญเสียทั้งหมด · ' + tx.created_at + '</div>' +
+            '<div class="reason">บริษัทนี้ถูกเพิกถอนออกจากตลาดหลักทรัพย์จริง เงินลงทุนในหุ้นนี้จึงหายไปทั้งหมด เหมือนในชีวิตจริง</div>';
+        } else {
+          row.innerHTML =
+            '<div class="top"><span class="type ' + tx.type + '">' + (tx.type === "buy" ? "ซื้อ" : "ขาย") + ' ' + tx.ticker + '</span><span>' + fmt(tx.qty * tx.price) + ' บาท</span></div>' +
+            '<div class="meta">' + tx.qty + ' หุ้น @ ' + fmt2(tx.price) + ' · ' + tx.created_at + '</div>' +
+            '<div class="reason">"' + String(tx.reason).replace(/</g, "&lt;") + '"</div>';
+        }
         list.appendChild(row);
       });
     } catch (e) {}

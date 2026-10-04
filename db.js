@@ -54,13 +54,55 @@ async function init() {
       dividend_yield REAL,
       market_cap REAL,
       history_json TEXT NOT NULL DEFAULT '{}',
+      status TEXT NOT NULL DEFAULT 'active',
+      missed_count INTEGER NOT NULL DEFAULT 0,
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS splits (
+      ticker TEXT NOT NULL,
+      split_date TEXT NOT NULL,
+      ratio REAL NOT NULL,
+      PRIMARY KEY (ticker, split_date)
+    )`,
+    `CREATE TABLE IF NOT EXISTS split_adjustments (
+      student_id TEXT NOT NULL,
+      ticker TEXT NOT NULL,
+      split_date TEXT NOT NULL,
+      old_qty INTEGER NOT NULL,
+      new_qty INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (student_id, ticker, split_date)
+    )`,
+    `CREATE TABLE IF NOT EXISTS delisting_losses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      student_id TEXT NOT NULL,
+      ticker TEXT NOT NULL,
+      qty INTEGER NOT NULL,
+      lost_value REAL NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )`,
     `CREATE TABLE IF NOT EXISTS password_reset_log (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       student_id TEXT NOT NULL,
       reset_by TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS dividends (
+      ticker TEXT NOT NULL,
+      pay_date TEXT NOT NULL,
+      amount_per_share REAL NOT NULL,
+      PRIMARY KEY (ticker, pay_date)
+    )`,
+    `CREATE TABLE IF NOT EXISTS dividend_distributions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      student_id TEXT NOT NULL,
+      ticker TEXT NOT NULL,
+      pay_date TEXT NOT NULL,
+      qty INTEGER NOT NULL,
+      amount_per_share REAL NOT NULL,
+      total_amount REAL NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE (student_id, ticker, pay_date)
     )`
   ]);
 
@@ -70,7 +112,9 @@ async function init() {
     "ALTER TABLE stocks ADD COLUMN pe_ratio REAL",
     "ALTER TABLE stocks ADD COLUMN pb_ratio REAL",
     "ALTER TABLE stocks ADD COLUMN dividend_yield REAL",
-    "ALTER TABLE stocks ADD COLUMN market_cap REAL"
+    "ALTER TABLE stocks ADD COLUMN market_cap REAL",
+    "ALTER TABLE stocks ADD COLUMN status TEXT NOT NULL DEFAULT 'active'",
+    "ALTER TABLE stocks ADD COLUMN missed_count INTEGER NOT NULL DEFAULT 0"
   ];
   for (const sql of migrations) {
     try {

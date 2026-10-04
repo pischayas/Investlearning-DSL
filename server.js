@@ -12,9 +12,9 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 const PORT = process.env.PORT || 3000;
-const COMMISSION_RATE = 0.0015;
-const COMMISSION_MIN = 50;
+const COMMISSION_RATE = 0.0015; // ค่าคอมมิชชั่นจำลอง 0.15% ของมูลค่าซื้อขาย ไม่มีขั้นต่ำ (ตามโบรกเกอร์ส่วนใหญ่ปัจจุบัน)
 const STARTING_CASH = 1000000;
+const SPREAD_RATE = 0.002; // ส่วนต่างราคาซื้อ-ขายจำลอง 0.2% (ราคาซื้อสูงกว่ากลาง 0.1%, ราคาขายต่ำกว่ากลาง 0.1%)
 
 // ---------- session เก็บใน memory (ง่ายพอสำหรับโปรเจกต์ห้องเรียน) ----------
 const sessions = new Map(); // token -> student_id
@@ -99,7 +99,7 @@ app.post("/api/logout", auth, wrap(async (req, res) => {
 // ==================== STOCKS (ทุกคนดูได้ ไม่ต้อง login) ====================
 
 app.get("/api/stocks", wrap(async (req, res) => {
-  const rows = await db.all("SELECT ticker, name, price, sector, pe_ratio, pb_ratio, dividend_yield, market_cap, history_json FROM stocks ORDER BY ticker", []);
+  const rows = await db.all("SELECT ticker, name, price, sector, pe_ratio, pb_ratio, dividend_yield, market_cap, history_json FROM stocks WHERE status = 'active' ORDER BY ticker", []);
   res.json(rows.map(r => ({
     ticker: r.ticker,
     name: r.name,
@@ -114,9 +114,28 @@ app.get("/api/stocks", wrap(async (req, res) => {
 }));
 
 app.get("/api/stocks/:ticker", wrap(async (req, res) => {
-  const r = await db.get("SELECT * FROM stocks WHERE ticker = ?", [req.params.ticker.toUpperCase()]);
+  const ticker = req.params.ticker.toUpperCase();
+  const r = await db.get("SELECT * FROM stocks WHERE ticker = ?", [ticker]);
   if (!r) return res.status(404).json({ error: "ไม่พบหุ้นนี้" });
-  res.json({ ticker: r.ticker, name: r.name, price: r.price, sector: r.sector, history: JSON.parse(r.history_json || "{}") });
+  const dividends = await db.all(
+    "SELECT pay_date, amount_per_share FROM dividends WHERE ticker = ? ORDER BY pay_date DESC LIMIT 12",
+    [ticker]
+  );
+  res.json({
+    ticker: r.ticker,
+    name: r.name,
+    price: r.price,
+    sector: r.sector,
+    peRatio: r.pe_ratio,
+    pbRatio: r.pb_ratio,
+    dividendYield: r.dividend_yield,
+    marketCap: r.market_cap,
+    status: r.status,
+    buyPrice: Math.round(r.price * (1 + SPREAD_RATE / 2) * 100) / 100,
+    sellPrice: Math.round(r.price * (1 - SPREAD_RATE / 2) * 100) / 100,
+    history: JSON.parse(r.history_json || "{}"),
+    dividendHistory: dividends.map(d => ({ date: d.pay_date, amountPerShare: d.amount_per_share }))
+  });
 }));
 
 // ==================== TRADING (นักเรียน) ====================
@@ -132,9 +151,18 @@ app.post("/api/trade", auth, wrap(async (req, res) => {
 
   const stock = await db.get("SELECT * FROM stocks WHERE ticker = ?", [ticker.toUpperCase()]);
   if (!stock) return res.status(404).json({ error: "ไม่พบหุ้นนี้" });
+  if (stock.status !== "active" && type === "buy") {
+    return res.status(400).json({ error: "หุ้นนี้ถูกเพิกถอนออกจากตลาดแล้ว ไม่สามารถซื้อได้" });
+  }
 
-  const value = stock.price * qty;
-  const fee = Math.max(value * COMMISSION_RATE, COMMISSION_MIN);
+  // จำลองส่วนต่างราคาเสนอซื้อ-ขาย (bid-ask spread) เหมือนตลาดจริง:
+  // ราคาซื้อจะสูงกว่าราคากลางเล็กน้อย ราคาขายจะต่ำกว่าราคากลางเล็กน้อย
+  const execPrice = type === "buy"
+    ? Math.round(stock.price * (1 + SPREAD_RATE / 2) * 100) / 100
+    : Math.round(stock.price * (1 - SPREAD_RATE / 2) * 100) / 100;
+
+  const value = execPrice * qty;
+  const fee = value * COMMISSION_RATE;
   const studentId = req.user.student_id;
   const holding = await db.get("SELECT * FROM holdings WHERE student_id = ? AND ticker = ?", [studentId, stock.ticker]);
 
@@ -142,7 +170,7 @@ app.post("/api/trade", auth, wrap(async (req, res) => {
     if (value + fee > req.user.cash) return res.status(400).json({ error: "เงินสดไม่พอสำหรับคำสั่งซื้อนี้" });
 
     const newQty = (holding ? holding.qty : 0) + qty;
-    const newAvg = ((holding ? holding.avg_cost * holding.qty : 0) + stock.price * qty) / newQty;
+    const newAvg = ((holding ? holding.avg_cost * holding.qty : 0) + execPrice * qty) / newQty;
 
     if (holding) {
       await db.run("UPDATE holdings SET qty = ?, avg_cost = ? WHERE student_id = ? AND ticker = ?",
@@ -167,7 +195,7 @@ app.post("/api/trade", auth, wrap(async (req, res) => {
   await db.run(`
     INSERT INTO transactions (student_id, ticker, type, qty, price, fee, reason)
     VALUES (?, ?, ?, ?, ?, ?, ?)
-  `, [studentId, stock.ticker, type, qty, stock.price, Math.round(fee * 100) / 100, reason.trim()]);
+  `, [studentId, stock.ticker, type, qty, execPrice, Math.round(fee * 100) / 100, reason.trim()]);
 
   const updatedUser = await db.get("SELECT cash FROM users WHERE student_id = ?", [studentId]);
   res.json({ ok: true, cash: updatedUser.cash });
@@ -195,18 +223,64 @@ app.get("/api/portfolio", auth, wrap(async (req, res) => {
   const holdingsValue = holdingsOut.reduce((sum, h) => sum + h.value, 0);
   const total = holdingsValue + req.user.cash;
 
+  const divRow = await db.get(
+    "SELECT COALESCE(SUM(total_amount), 0) AS total FROM dividend_distributions WHERE student_id = ?",
+    [req.user.student_id]
+  );
+
   res.json({
     cash: req.user.cash,
     holdings: holdingsOut,
     totalValue: total,
-    totalReturnPercent: ((total - STARTING_CASH) / STARTING_CASH) * 100
+    totalReturnPercent: ((total - STARTING_CASH) / STARTING_CASH) * 100,
+    totalDividendsReceived: divRow.total
   });
 }));
 
 app.get("/api/transactions", auth, wrap(async (req, res) => {
-  const rows = await db.all("SELECT * FROM transactions WHERE student_id = ? ORDER BY id DESC LIMIT 200",
+  const trades = await db.all("SELECT * FROM transactions WHERE student_id = ? ORDER BY id DESC LIMIT 200",
     [req.user.student_id]);
-  res.json(rows);
+  const dividends = await db.all(
+    "SELECT * FROM dividend_distributions WHERE student_id = ? ORDER BY id DESC LIMIT 200",
+    [req.user.student_id]
+  );
+  const delistings = await db.all(
+    "SELECT * FROM delisting_losses WHERE student_id = ? ORDER BY id DESC LIMIT 200",
+    [req.user.student_id]
+  );
+
+  const tradeRows = trades.map(t => ({
+    kind: "trade",
+    ticker: t.ticker,
+    type: t.type,
+    qty: t.qty,
+    price: t.price,
+    fee: t.fee,
+    reason: t.reason,
+    created_at: t.created_at
+  }));
+
+  const dividendRows = dividends.map(d => ({
+    kind: "dividend",
+    ticker: d.ticker,
+    type: "dividend",
+    qty: d.qty,
+    amountPerShare: d.amount_per_share,
+    totalAmount: d.total_amount,
+    created_at: d.created_at
+  }));
+
+  const delistingRows = delistings.map(d => ({
+    kind: "delisting",
+    ticker: d.ticker,
+    type: "delisting",
+    qty: d.qty,
+    lostValue: d.lost_value,
+    created_at: d.created_at
+  }));
+
+  const merged = tradeRows.concat(dividendRows, delistingRows).sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+  res.json(merged);
 }));
 
 // ==================== TEACHER ====================
