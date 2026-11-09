@@ -73,6 +73,22 @@ async function init() {
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       PRIMARY KEY (student_id, ticker, split_date)
     )`,
+    `CREATE TABLE IF NOT EXISTS watchlist (
+      student_id TEXT NOT NULL,
+      ticker TEXT NOT NULL,
+      added_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (student_id, ticker)
+    )`,
+    `CREATE TABLE IF NOT EXISTS portfolio_snapshots (
+      student_id TEXT NOT NULL,
+      snap_date TEXT NOT NULL,
+      total_value REAL NOT NULL,
+      PRIMARY KEY (student_id, snap_date)
+    )`,
+    `CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )`,
     `CREATE TABLE IF NOT EXISTS delisting_losses (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       student_id TEXT NOT NULL,
@@ -114,7 +130,8 @@ async function init() {
     "ALTER TABLE stocks ADD COLUMN dividend_yield REAL",
     "ALTER TABLE stocks ADD COLUMN market_cap REAL",
     "ALTER TABLE stocks ADD COLUMN status TEXT NOT NULL DEFAULT 'active'",
-    "ALTER TABLE stocks ADD COLUMN missed_count INTEGER NOT NULL DEFAULT 0"
+    "ALTER TABLE stocks ADD COLUMN missed_count INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE transactions ADD COLUMN realized_pl REAL"
   ];
   for (const sql of migrations) {
     try {

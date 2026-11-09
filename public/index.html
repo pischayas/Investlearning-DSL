@@ -129,6 +129,55 @@
   .small-btn:hover { border-color: var(--accent); color: var(--accent); }
   .small-btn:active { transform: scale(0.95); }
 
+  nav.tabs { overflow-x: auto; }
+  nav.tabs button { white-space: nowrap; padding-left: 4px; padding-right: 4px; min-width: 56px; }
+
+  .weekly-banner { margin: 12px 18px 0; padding: 11px 38px 11px 14px; border-radius: 12px; background: var(--accent-bg); border: 0.5px solid var(--accent); font-size: 12.5px; line-height: 1.55; position: relative; }
+  .weekly-banner b { color: var(--accent-text); }
+  .weekly-banner .close { position: absolute; top: 6px; right: 8px; background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; line-height: 1; }
+
+  .section-head { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin: 18px 0 8px; }
+  .section-head:first-child { margin-top: 0; }
+  .lb-row.me { background: var(--accent-bg); margin: 0 -12px; padding: 9px 12px; border-radius: 10px; border-bottom: none; }
+  .lb-row .lb-name { flex: 1; font-size: 13px; }
+  .lb-row .lb-return { font-size: 13px; font-weight: 600; }
+  .lb-gap { text-align: center; color: var(--text-muted); font-size: 12px; padding: 2px 0; }
+  .note-card { background: var(--card-alt); border-radius: 10px; padding: 10px 12px; font-size: 12px; color: var(--text-secondary); line-height: 1.55; margin-bottom: 10px; }
+
+  .badge-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .badge-card { background: var(--card-alt); border: 0.5px solid var(--border); border-radius: 12px; padding: 12px 10px; text-align: center; }
+  .badge-card .b-icon { font-size: 26px; margin-bottom: 4px; }
+  .badge-card .b-title { font-size: 12.5px; font-weight: 600; margin-bottom: 3px; }
+  .badge-card .b-desc { font-size: 10.5px; color: var(--text-muted); line-height: 1.45; }
+  .badge-card.locked { opacity: 0.4; filter: grayscale(1); }
+  .badge-card.earned { border-color: var(--accent); background: var(--accent-bg); }
+
+  .watch-star { background: none; border: 0.5px solid var(--border); border-radius: 8px; padding: 5px 9px; font-size: 11.5px; color: var(--text-secondary); cursor: pointer; font-family: inherit; margin-top: 6px; }
+  .watch-star.on { color: var(--amber); border-color: var(--amber); background: var(--amber-bg); }
+  .stock-row .star { color: var(--amber); font-size: 11px; margin-left: 4px; }
+
+  .report-head { text-align: center; margin-bottom: 14px; }
+  .report-head .r-title { font-size: 16px; font-weight: 700; }
+  .report-head .r-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+  .report-chart { height: 120px; border: 0.5px solid var(--border); border-radius: 10px; padding: 8px; margin-bottom: 12px; }
+  .report-chart svg { width: 100%; height: 100%; }
+  .insight-item { font-size: 12.5px; line-height: 1.6; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+  .insight-item:last-child { border-bottom: none; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 11.5px; padding: 4px 10px; border-radius: 20px; background: var(--accent-bg); color: var(--accent-text); }
+  .kv-row { display: flex; justify-content: space-between; font-size: 12.5px; padding: 7px 0; border-bottom: 0.5px solid var(--border); }
+  .kv-row:last-child { border-bottom: none; }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12.5px; padding: 10px 12px; background: var(--card-alt); border-radius: 10px; margin-bottom: 10px; }
+  .toggle-row input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+  @media print {
+    :root { --bg: #fff; --card: #fff; --card-alt: #f3f4f6; --border: #cfd3da; --text-primary: #111; --text-secondary: #333; --text-muted: #555; --accent: #0a7a55; --accent-bg: #e3f5ee; --accent-text: #065f42; --danger: #b42318; --amber: #a15c07; --amber-bg: #fdf0d9; --shadow: none; }
+    body { background: #fff; }
+    header.topbar, nav.tabs, .weekly-banner, .no-print, .btn { display: none !important; }
+    .app-shell { max-width: none; box-shadow: none; }
+    body.printing-panel #view-teacher .content > *:not(#teacherReportPanel) { display: none !important; }
+  }
+
   .search-bar { display: flex; align-items: center; gap: 6px; border: 0.5px solid var(--border); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; background: var(--bg); }
   .search-bar:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
   .search-bar input { border: none; background: transparent; font-size: 13px; flex: 1; color: var(--text-primary); font-family: inherit; padding: 0; }
@@ -192,8 +241,11 @@
       <button class="tab-btn active" data-tab="market">ตลาด</button>
       <button class="tab-btn" data-tab="featured">หุ้นเด่น</button>
       <button class="tab-btn" data-tab="portfolio">พอร์ต</button>
+      <button class="tab-btn" data-tab="ranking">อันดับ</button>
       <button class="tab-btn" data-tab="history">ประวัติ</button>
+      <button class="tab-btn" data-tab="report">รายงาน</button>
     </nav>
+    <div id="weeklyBanner" class="weekly-banner" hidden></div>
     <div class="content">
       <div id="tab-market">
         <div class="search-bar">
@@ -218,7 +270,8 @@
       <div id="tab-detail" hidden>
         <span class="back-link" id="btnBackToMarket">‹ กลับไปตลาด</span>
         <div class="detail-head">
-          <div><div class="t" id="dTicker"></div><div class="n" id="dName"></div></div>
+          <div><div class="t" id="dTicker"></div><div class="n" id="dName"></div>
+            <button class="watch-star" id="btnWatch">☆ ติดตาม</button></div>
           <div class="p" id="dPrice"></div>
         </div>
         <div class="range-pills" id="rangePills">
@@ -264,7 +317,15 @@
         <div id="holdingsList"></div>
       </div>
 
+      <div id="tab-ranking" hidden>
+        <div id="rankingContent"></div>
+      </div>
+
       <div id="tab-history" hidden><div id="txList"></div></div>
+
+      <div id="tab-report" hidden>
+        <div id="reportContent"></div>
+      </div>
     </div>
   </section>
 
@@ -284,8 +345,13 @@
       <button class="btn btn-primary" id="btnCreateStudent">+ สร้างบัญชี</button>
       <div id="tempPwReveal"></div>
 
+      <p class="subtitle" style="margin-top:24px;text-align:left;">ตั้งค่าห้องเรียน</p>
+      <label class="toggle-row"><span>แสดงอันดับผลตอบแทนให้นักเรียนเห็น (เห็นเฉพาะชื่อต้น)</span><input type="checkbox" id="chkLeaderboard"></label>
+
       <p class="subtitle" style="margin-top:24px;text-align:left;">อันดับนักเรียนทั้งหมด</p>
       <div id="teacherStudentList"></div>
+
+      <div id="teacherReportPanel" style="margin-top:24px;"></div>
     </div>
   </section>
 
@@ -334,6 +400,7 @@
       token = data.token;
       localStorage.setItem("il_token", token);
       currentUser = { name: data.name, role: data.role };
+      try { localStorage.setItem("il_user", JSON.stringify(currentUser)); } catch (e2) {}
       if (data.mustChangePassword) {
         document.getElementById("welcomeName").textContent = "ยินดีต้อนรับ " + data.name;
         showView("changepw");
@@ -366,6 +433,7 @@
     api("/api/logout", { method: "POST" }).catch(function () {});
     token = null;
     localStorage.removeItem("il_token");
+    try { localStorage.removeItem("il_user"); sessionStorage.removeItem("il_banner_closed"); } catch (e2) {}
     document.getElementById("loginId").value = "";
     document.getElementById("loginPw").value = "";
     showView("login");
@@ -377,40 +445,36 @@
     if (currentUser.role === "teacher") {
       document.getElementById("teacherName").textContent = currentUser.name;
       showView("teacher");
+      loadTeacherSettings();
       renderTeacherStudents();
     } else {
       document.getElementById("topGreet").textContent = "สวัสดี " + currentUser.name;
       showView("student");
+      await loadWatchlist();
       await loadStocks();
       switchTab("market");
       refreshCash();
+      loadWeeklyBanner();
     }
   }
 
-  // try to resume session on page load
+  // กู้เซสชันตอนเปิดหน้าซ้ำ (ถามเซิร์ฟเวอร์ว่าเราเป็นใคร จะได้ไม่พาครูไปหน้านักเรียนผิด)
   (async function boot() {
     if (!token) { showView("login"); return; }
     try {
-      var portfolio = await api("/api/portfolio");
-      // ถ้าเรียกสำเร็จแปลว่าเป็น student ที่ login ค้างไว้
-      currentUser = { name: "", role: "student" };
-      // ต้องรู้ชื่อด้วย แต่ endpoint portfolio ไม่ได้ส่งชื่อมา ลอง fallback
-      document.getElementById("topGreet").textContent = "สวัสดี";
-      showView("student");
-      await loadStocks();
-      switchTab("market");
-      renderPortfolioData(portfolio);
-    } catch (e) {
-      try {
-        var students = await api("/api/teacher/students");
-        currentUser = { name: "", role: "teacher" };
-        showView("teacher");
-        renderStudentListData(students);
-      } catch (e2) {
-        token = null;
-        localStorage.removeItem("il_token");
-        showView("login");
+      var me = await api("/api/me");
+      currentUser = { name: me.name, role: me.role };
+      try { localStorage.setItem("il_user", JSON.stringify(currentUser)); } catch (e2) {}
+      if (me.mustChangePassword) {
+        document.getElementById("welcomeName").textContent = "ยินดีต้อนรับ " + me.name;
+        showView("changepw");
+        return;
       }
+      await enterApp();
+    } catch (e) {
+      token = null;
+      localStorage.removeItem("il_token");
+      showView("login");
     }
   })();
 
@@ -433,6 +497,211 @@
     } catch (e) {}
   }
 
+  // ==================== ENGAGEMENT: helpers ====================
+  function esc(t) {
+    return String(t == null ? "" : t).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+  function signed(n, d) { return (n >= 0 ? "+" : "") + Number(n).toFixed(d); }
+  function cls(n) { return n >= 0 ? "up" : "down"; }
+
+  // ---------- Watchlist ----------
+  var WATCH = {};
+  var WATCH_FILTER = "⭐ ที่ติดตาม";
+
+  async function loadWatchlist() {
+    try {
+      var list = await api("/api/watchlist");
+      WATCH = {};
+      list.forEach(function (t) { WATCH[t] = true; });
+    } catch (e) {}
+  }
+
+  function updateWatchButton() {
+    var btn = document.getElementById("btnWatch");
+    var on = !!WATCH[currentTicker];
+    btn.textContent = on ? "★ กำลังติดตาม" : "☆ ติดตาม";
+    btn.classList.toggle("on", on);
+  }
+
+  document.getElementById("btnWatch").addEventListener("click", async function () {
+    var t = currentTicker;
+    if (!t) return;
+    try {
+      if (WATCH[t]) {
+        await api("/api/watchlist/" + encodeURIComponent(t), { method: "DELETE" });
+        delete WATCH[t];
+      } else {
+        await api("/api/watchlist", { method: "POST", body: JSON.stringify({ ticker: t }) });
+        WATCH[t] = true;
+      }
+      updateWatchButton();
+      renderMarket();
+    } catch (e) {}
+  });
+
+  // ---------- สรุปรายสัปดาห์ (banner) ----------
+  async function loadWeeklyBanner() {
+    var el = document.getElementById("weeklyBanner");
+    el.hidden = true;
+    try {
+      if (sessionStorage.getItem("il_banner_closed")) return;
+      var w = await api("/api/weekly-summary");
+      if (!w.hasData) return;
+      var label = w.spanDays >= 7 ? "สัปดาห์นี้" : "ช่วง " + w.spanDays + " วันที่ผ่านมา";
+      var msg = "📊 <b>สรุป" + label + "</b> พอร์ตของคุณ <b class=\"" + cls(w.myReturnPercent) + "\">" + signed(w.myReturnPercent, 2) + "%</b>";
+      if (w.classAvgPercent != null) {
+        msg += " · ค่าเฉลี่ยห้อง " + signed(w.classAvgPercent, 2) + "%" +
+          (w.myReturnPercent >= w.classAvgPercent ? " (เหนือค่าเฉลี่ย 🎉)" : " (ต่ำกว่าค่าเฉลี่ยเล็กน้อย)");
+      }
+      if (w.rank) msg += " · อันดับ " + w.rank + "/" + w.total;
+      el.innerHTML = msg + '<button class="close" aria-label="ปิด">×</button>';
+      el.querySelector(".close").addEventListener("click", function () {
+        el.hidden = true;
+        try { sessionStorage.setItem("il_banner_closed", "1"); } catch (e2) {}
+      });
+      el.hidden = false;
+    } catch (e) {}
+  }
+
+  // ---------- แท็บ "อันดับ" (อันดับห้องเรียน + badge) ----------
+  async function loadRanking() {
+    var el = document.getElementById("rankingContent");
+    el.innerHTML = '<div class="spinner"></div>';
+    try {
+      var results = await Promise.all([api("/api/leaderboard"), api("/api/badges")]);
+      var lb = results[0], badges = results[1];
+      var html = '<div class="section-head">🏆 อันดับผลตอบแทนห้องเรียน</div>';
+
+      if (!lb.enabled) {
+        html += '<div class="note-card">ครูปิดการแสดงอันดับไว้ชั่วคราว</div>';
+      } else {
+        if (lb.notRankedYet) html += '<div class="note-card">🎯 ซื้อขายหุ้นครั้งแรกเพื่อเข้าสู่อันดับ</div>';
+        if (lb.total === 0) {
+          html += '<div class="empty-state" style="padding:20px 0;">ยังไม่มีใครซื้อขาย เป็นคนแรกที่เข้าสู่อันดับเลย!</div>';
+        } else {
+          var medals = { 1: "🥇", 2: "🥈", 3: "🥉" };
+          var row = function (r) {
+            return '<div class="lb-row' + (r.isMe ? ' me' : '') + '">' +
+              '<div class="lb-rank">' + (medals[r.rank] || r.rank) + '</div>' +
+              '<div class="lb-name">' + esc(r.name) + (r.isMe ? ' (คุณ)' : '') + '</div>' +
+              '<div class="lb-return ' + cls(r.returnPercent) + '">' + signed(r.returnPercent, 2) + '%</div></div>';
+          };
+          lb.top.forEach(function (r) { html += row(r); });
+          if (lb.me) html += '<div class="lb-gap">⋯</div>' + row(lb.me);
+          html += '<div class="hint-text" style="text-align:center;">แสดงเฉพาะผู้ที่เคยซื้อขายแล้ว · เห็นเฉพาะชื่อต้น</div>';
+        }
+      }
+
+      var earned = badges.filter(function (b) { return b.earned; }).length;
+      html += '<div class="section-head">🏅 ความสำเร็จของคุณ (' + earned + '/' + badges.length + ')</div><div class="badge-grid">';
+      badges.forEach(function (b) {
+        html += '<div class="badge-card ' + (b.earned ? 'earned' : 'locked') + '">' +
+          '<div class="b-icon">' + b.icon + '</div><div class="b-title">' + esc(b.title) + '</div>' +
+          '<div class="b-desc">' + esc(b.description) + '</div></div>';
+      });
+      html += '</div>';
+      el.innerHTML = html;
+    } catch (e) {
+      el.innerHTML = '<div class="empty-state">โหลดข้อมูลไม่สำเร็จ</div>';
+    }
+  }
+
+  // ---------- รายงานสรุปผล (ใช้ร่วมกันทั้งนักเรียนและครู) ----------
+  function renderReport(container, r, opts) {
+    opts = opts || {};
+    var h = '';
+    h += '<div class="report-head"><div class="r-title">📘 รายงานสรุปผลการลงทุน</div>' +
+      '<div class="r-sub">' + esc(r.name) + ' · รหัส ' + esc(r.studentId) + ' · ณ วันที่ ' + esc(r.generatedAt) + '</div></div>';
+
+    h += '<div class="stat-grid" style="grid-template-columns:1fr 1fr 1fr;">' +
+      '<div class="stat-card"><div class="l">มูลค่าพอร์ต</div><div class="v">' + fmt(r.totalValue) + '</div></div>' +
+      '<div class="stat-card"><div class="l">ผลตอบแทน</div><div class="v ' + cls(r.returnPercent) + '">' + signed(r.returnPercent, 2) + '%</div></div>' +
+      '<div class="stat-card"><div class="l">อันดับห้อง</div><div class="v">' + (r.rank ? r.rank.rank + '/' + r.rank.total : '-') + '</div></div></div>';
+
+    if (r.timeline && r.timeline.length >= 2) {
+      var vals = r.timeline.map(function (p) { return p.value; });
+      var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+      var pad = (max - min) * 0.1 || 1;
+      var lo = min - pad, hi = max + pad;
+      var pts = vals.map(function (v, i) {
+        var x = (i / (vals.length - 1)) * 300;
+        var y = 100 - ((v - lo) / (hi - lo)) * 100;
+        return x.toFixed(1) + ',' + y.toFixed(1);
+      }).join(' ');
+      var up = vals[vals.length - 1] >= vals[0];
+      h += '<div class="section-head">มูลค่าพอร์ตตามเวลา</div>' +
+        '<div class="report-chart"><svg viewBox="0 0 300 100" preserveAspectRatio="none"><polyline points="' + pts + '" fill="none" stroke="' + (up ? '#34d399' : '#f87171') + '" stroke-width="2"/></svg></div>' +
+        '<div class="kv-row" style="font-size:11px;color:var(--text-muted);"><span>' + esc(r.timeline[0].date) + '</span><span>' + esc(r.timeline[r.timeline.length - 1].date) + '</span></div>';
+    } else {
+      h += '<div class="note-card" style="margin-top:12px;">กราฟมูลค่าพอร์ตจะแสดงเมื่อระบบสะสมข้อมูลได้หลายวัน</div>';
+    }
+
+    h += '<div class="section-head">ภาพรวมการเงิน</div>' +
+      '<div class="kv-row"><span>เงินทุนเริ่มต้น</span><span>' + fmt(r.startingCash) + ' บาท</span></div>' +
+      '<div class="kv-row"><span>เงินสดคงเหลือ</span><span>' + fmt(r.cash) + ' บาท</span></div>' +
+      '<div class="kv-row"><span>มูลค่าหุ้นที่ถืออยู่</span><span>' + fmt(r.holdingsValue) + ' บาท</span></div>' +
+      '<div class="kv-row"><span>กำไร/ขาดทุนรวม</span><span class="' + cls(r.totalReturn) + '">' + (r.totalReturn >= 0 ? '+' : '') + fmt(r.totalReturn) + ' บาท</span></div>';
+
+    var t = r.trades;
+    h += '<div class="section-head">พฤติกรรมการซื้อขาย</div>' +
+      '<div class="kv-row"><span>ซื้อ / ขาย</span><span>' + t.buys + ' / ' + t.sells + ' ครั้ง</span></div>' +
+      '<div class="kv-row"><span>ขายแล้วได้กำไร / ขาดทุน</span><span>' + t.winningSells + ' / ' + t.losingSells + ' ครั้ง</span></div>' +
+      '<div class="kv-row"><span>กำไร/ขาดทุนที่เกิดขึ้นจริงจากการขาย</span><span class="' + cls(t.realizedTotal) + '">' + (t.realizedTotal >= 0 ? '+' : '') + fmt(t.realizedTotal) + ' บาท</span></div>' +
+      '<div class="kv-row"><span>ค่าคอมมิชชั่นรวม</span><span>' + fmt(t.totalFees) + ' บาท</span></div>' +
+      '<div class="kv-row"><span>เงินปันผลที่ได้รับ</span><span>' + fmt(r.dividends.total) + ' บาท (' + r.dividends.count + ' ครั้ง)</span></div>';
+    if (r.delistingLoss > 0) {
+      h += '<div class="kv-row"><span>สูญเสียจากหุ้นถูกเพิกถอน</span><span class="down">-' + fmt(r.delistingLoss) + ' บาท</span></div>';
+    }
+
+    h += '<div class="section-head">หุ้นที่ถืออยู่</div>';
+    if (!r.holdings.length) {
+      h += '<div class="empty-state" style="padding:14px 0;">ไม่มีหุ้นในพอร์ตตอนนี้</div>';
+    } else {
+      r.holdings.forEach(function (x) {
+        h += '<div class="holding-row"><div class="l"><div class="t">' + esc(x.ticker) + '</div><div class="q">' + x.qty + ' หุ้น · ' + esc(x.sector) + '</div></div>' +
+          '<div class="r"><div class="v">' + fmt(x.value) + '</div><div class="pl ' + cls(x.plPercent) + '">' + signed(x.plPercent, 2) + '%</div></div></div>';
+      });
+      if (r.best) h += '<div class="kv-row" style="margin-top:6px;"><span>ให้ผลดีที่สุด</span><span class="up">' + esc(r.best.ticker) + ' (' + signed(r.best.plPercent, 2) + '%)</span></div>';
+      if (r.worst) h += '<div class="kv-row"><span>ให้ผลแย่ที่สุด</span><span class="' + cls(r.worst.plPercent) + '">' + esc(r.worst.ticker) + ' (' + signed(r.worst.plPercent, 2) + '%)</span></div>';
+    }
+
+    h += '<div class="section-head">ความสำเร็จที่ปลดล็อก</div>';
+    if (r.badges.length) {
+      h += '<div class="chip-row">' + r.badges.map(function (b) { return '<span class="chip">' + b.icon + ' ' + esc(b.title) + '</span>'; }).join('') + '</div>';
+    } else {
+      h += '<div class="hint-text" style="margin:0;">ยังไม่มี — ดูวิธีปลดล็อกได้ที่แท็บ "อันดับ"</div>';
+    }
+
+    h += '<div class="section-head">ข้อสังเกตจากพอร์ตของคุณ</div>';
+    if (r.insights.length) {
+      r.insights.forEach(function (i) { h += '<div class="insight-item">💡 ' + esc(i) + '</div>'; });
+    } else {
+      h += '<div class="hint-text" style="margin:0;">ยังไม่มีข้อสังเกตเพิ่มเติม</div>';
+    }
+
+    h += '<button class="btn btn-secondary btn-print no-print">🖨️ พิมพ์ / บันทึกเป็น PDF</button>';
+    container.innerHTML = h;
+
+    container.querySelector(".btn-print").addEventListener("click", function () {
+      if (opts.panel) document.body.classList.add("printing-panel");
+      window.print();
+    });
+  }
+  window.addEventListener("afterprint", function () { document.body.classList.remove("printing-panel"); });
+
+  async function loadReport() {
+    var el = document.getElementById("reportContent");
+    el.innerHTML = '<div class="spinner"></div>';
+    try {
+      var r = await api("/api/report");
+      renderReport(el, r);
+    } catch (e) {
+      el.innerHTML = '<div class="empty-state">โหลดรายงานไม่สำเร็จ</div>';
+    }
+  }
+
   var tabButtons = document.querySelectorAll("#view-student .tab-btn");
   tabButtons.forEach(function (btn) {
     btn.addEventListener("click", function () { switchTab(btn.getAttribute("data-tab")); });
@@ -444,6 +713,8 @@
     document.getElementById("tab-detail").hidden = (name !== "detail");
     document.getElementById("tab-portfolio").hidden = (name !== "portfolio");
     document.getElementById("tab-history").hidden = (name !== "history");
+    document.getElementById("tab-ranking").hidden = (name !== "ranking");
+    document.getElementById("tab-report").hidden = (name !== "report");
     var activeEl = document.getElementById("tab-" + name);
     if (activeEl) {
       activeEl.classList.remove("fade-in");
@@ -453,6 +724,8 @@
     if (name === "portfolio") loadPortfolio();
     if (name === "history") loadHistory();
     if (name === "featured") renderFeatured();
+    if (name === "ranking") loadRanking();
+    if (name === "report") loadReport();
   }
 
   function changePercent(s) {
@@ -469,7 +742,7 @@
       var sec = STOCKS[t].sector || "อื่นๆ";
       sectors[sec] = true;
     });
-    var list = ["ทั้งหมด"].concat(Object.keys(sectors).sort());
+    var list = ["ทั้งหมด", WATCH_FILTER].concat(Object.keys(sectors).sort());
     var row = document.getElementById("sectorFilterRow");
     row.innerHTML = "";
     list.forEach(function (sec) {
@@ -497,7 +770,8 @@
 
     var tickers = Object.keys(STOCKS).filter(function (ticker) {
       var s = STOCKS[ticker];
-      if (activeSector !== "ทั้งหมด" && (s.sector || "อื่นๆ") !== activeSector) return false;
+      if (activeSector === WATCH_FILTER) { if (!WATCH[ticker]) return false; }
+      else if (activeSector !== "ทั้งหมด" && (s.sector || "อื่นๆ") !== activeSector) return false;
       if (!query) return true;
       return ticker.toLowerCase().indexOf(query) !== -1 || (s.name || "").toLowerCase().indexOf(query) !== -1;
     });
@@ -518,7 +792,9 @@
     });
 
     if (tickers.length === 0) {
-      el.innerHTML = '<div class="no-results">ไม่พบหุ้นที่ตรงกับเงื่อนไขนี้</div>';
+      el.innerHTML = activeSector === WATCH_FILTER
+        ? '<div class="no-results">ยังไม่ได้ติดตามหุ้นตัวไหน<br>กดปุ่ม ☆ ติดตาม ในหน้ารายละเอียดหุ้นเพื่อเพิ่ม</div>'
+        : '<div class="no-results">ไม่พบหุ้นที่ตรงกับเงื่อนไขนี้</div>';
       return;
     }
 
@@ -529,7 +805,7 @@
       var row = document.createElement("div");
       row.className = "stock-row";
       row.innerHTML =
-        '<div><div class="name">' + ticker + '</div><div class="sub">' + s.name + '</div></div>' +
+        '<div><div class="name">' + ticker + (WATCH[ticker] ? '<span class="star">★</span>' : '') + '</div><div class="sub">' + esc(s.name) + '</div></div>' +
         '<div><div class="price">' + fmt2(s.price) + '</div><div class="chg ' + (up ? "up" : "down") + '">' + (up ? "+" : "") + chg.toFixed(2) + '%</div></div>';
       row.addEventListener("click", function () { openDetail(ticker); });
       el.appendChild(row);
@@ -573,6 +849,13 @@
       });
     }
 
+    var watched = all.filter(function (t) { return WATCH[t]; });
+    if (watched.length) {
+      section("⭐ หุ้นที่คุณติดตาม", watched.slice(0, 8), function (s) {
+        var c = changePercent(s); return (c >= 0 ? "+" : "") + c.toFixed(2) + "%";
+      });
+    }
+
     var byGain = all.slice().sort(function (a, b) { return changePercent(STOCKS[b]) - changePercent(STOCKS[a]); });
     section("🚀 เปลี่ยนแปลงมากสุด (ขึ้น) — 1 เดือน", byGain.slice(0, 5), function (s) {
       var c = changePercent(s); return (c >= 0 ? "+" : "") + c.toFixed(2) + "%";
@@ -613,6 +896,7 @@
     setTradeMode("buy");
     renderChart();
     updateTradeSummary();
+    updateWatchButton();
     switchTab("detail");
     loadStockDetail(ticker);
   }
@@ -810,6 +1094,19 @@
     }
   });
 
+  async function loadTeacherSettings() {
+    try {
+      var st = await api("/api/teacher/settings");
+      document.getElementById("chkLeaderboard").checked = !!st.leaderboardEnabled;
+    } catch (e) {}
+  }
+  document.getElementById("chkLeaderboard").addEventListener("change", async function (ev) {
+    var box = ev.target;
+    try {
+      await api("/api/teacher/settings", { method: "POST", body: JSON.stringify({ leaderboardEnabled: box.checked }) });
+    } catch (e) { box.checked = !box.checked; alert(e.message); }
+  });
+
   async function renderTeacherStudents() {
     try {
       var students = await api("/api/teacher/students");
@@ -829,10 +1126,27 @@
       if (s.tradesToday >= 10) flags += '<span class="flag">ซื้อขายถี่วันนี้ ' + s.tradesToday + ' ครั้ง</span>';
       row.innerHTML =
         '<div class="lb-rank">' + (i + 1) + '</div>' +
-        '<div class="lb-info"><div class="lb-name">' + s.name + '</div><div class="lb-meta">' + s.studentId + ' · ถือ ' + s.holdingCount + ' ตัว' + flags + '</div></div>' +
+        '<div class="lb-info"><div class="lb-name">' + esc(s.name) + '</div><div class="lb-meta">' + s.studentId + ' · ถือ ' + s.holdingCount + ' ตัว' + flags + '</div></div>' +
         '<div class="lb-return ' + (s.returnPercent >= 0 ? "up" : "down") + '">' + (s.returnPercent >= 0 ? "+" : "") + s.returnPercent.toFixed(2) + '%</div>' +
-        '<button class="small-btn" data-reset="' + s.studentId + '">รีเซ็ตรหัสผ่าน</button>';
+        '<button class="small-btn" data-report="' + esc(s.studentId) + '">รายงาน</button>' +
+        '<button class="small-btn" data-reset="' + esc(s.studentId) + '">รีเซ็ตรหัส</button>';
       list.appendChild(row);
+    });
+    list.querySelectorAll("[data-report]").forEach(function (btn) {
+      btn.addEventListener("click", async function () {
+        var id = btn.getAttribute("data-report");
+        var panel = document.getElementById("teacherReportPanel");
+        panel.innerHTML = '<div class="spinner"></div>';
+        try {
+          var r = await api("/api/teacher/students/" + encodeURIComponent(id) + "/report");
+          var body = document.createElement("div");
+          renderReport(body, r, { panel: true });
+          panel.innerHTML = '<button class="small-btn no-print" id="btnCloseReport">× ปิดรายงาน</button>';
+          panel.appendChild(body);
+          document.getElementById("btnCloseReport").addEventListener("click", function () { panel.innerHTML = ""; });
+          panel.scrollIntoView({ behavior: "smooth", block: "start" });
+        } catch (e) { panel.innerHTML = '<div class="error-text">' + esc(e.message) + '</div>'; }
+      });
     });
     list.querySelectorAll("[data-reset]").forEach(function (btn) {
       btn.addEventListener("click", async function () {

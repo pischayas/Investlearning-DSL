@@ -6,6 +6,7 @@ const express = require("express");
 const path = require("path");
 const db = require("./db");
 const { hashPassword, verifyPassword, generateTempPassword, generateToken } = require("./auth");
+const stats = require("./stats");
 
 const app = express();
 app.use(express.json());
@@ -90,6 +91,10 @@ app.post("/api/change-password", auth, wrap(async (req, res) => {
   res.json({ ok: true });
 }));
 
+app.get("/api/me", auth, (req, res) => {
+  res.json({ name: req.user.name, role: req.user.role, mustChangePassword: !!req.user.must_change_password });
+});
+
 app.post("/api/logout", auth, wrap(async (req, res) => {
   const header = req.headers.authorization || "";
   sessions.delete(header.slice(7));
@@ -165,6 +170,7 @@ app.post("/api/trade", auth, wrap(async (req, res) => {
   const fee = value * COMMISSION_RATE;
   const studentId = req.user.student_id;
   const holding = await db.get("SELECT * FROM holdings WHERE student_id = ? AND ticker = ?", [studentId, stock.ticker]);
+  let realizedPL = null; // กำไร/ขาดทุนที่เกิดขึ้นจริง (เฉพาะคำสั่งขาย) ใช้ทำ badge และรายงาน
 
   if (type === "buy") {
     if (value + fee > req.user.cash) return res.status(400).json({ error: "เงินสดไม่พอสำหรับคำสั่งซื้อนี้" });
@@ -183,6 +189,7 @@ app.post("/api/trade", auth, wrap(async (req, res) => {
   } else {
     if (!holding || holding.qty < qty) return res.status(400).json({ error: "จำนวนหุ้นที่ถืออยู่ไม่พอสำหรับคำสั่งขายนี้" });
 
+    realizedPL = Math.round(((execPrice - holding.avg_cost) * qty - fee) * 100) / 100;
     const remaining = holding.qty - qty;
     if (remaining === 0) {
       await db.run("DELETE FROM holdings WHERE student_id = ? AND ticker = ?", [studentId, stock.ticker]);
@@ -193,9 +200,9 @@ app.post("/api/trade", auth, wrap(async (req, res) => {
   }
 
   await db.run(`
-    INSERT INTO transactions (student_id, ticker, type, qty, price, fee, reason)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `, [studentId, stock.ticker, type, qty, execPrice, Math.round(fee * 100) / 100, reason.trim()]);
+    INSERT INTO transactions (student_id, ticker, type, qty, price, fee, reason, realized_pl)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `, [studentId, stock.ticker, type, qty, execPrice, Math.round(fee * 100) / 100, reason.trim(), realizedPL]);
 
   const updatedUser = await db.get("SELECT cash FROM users WHERE student_id = ?", [studentId]);
   res.json({ ok: true, cash: updatedUser.cash });
@@ -283,7 +290,68 @@ app.get("/api/transactions", auth, wrap(async (req, res) => {
   res.json(merged);
 }));
 
+// ==================== ENGAGEMENT (อันดับ / badge / สรุปสัปดาห์ / watchlist / รายงาน) ====================
+
+app.get("/api/leaderboard", auth, wrap(async (req, res) => {
+  res.json(await stats.buildLeaderboard(req.user.student_id));
+}));
+
+app.get("/api/badges", auth, wrap(async (req, res) => {
+  res.json(await stats.computeBadges(req.user.student_id));
+}));
+
+app.get("/api/weekly-summary", auth, wrap(async (req, res) => {
+  if (req.user.role !== "student") return res.json({ hasData: false });
+  res.json(await stats.buildWeeklySummary(req.user.student_id));
+}));
+
+app.get("/api/report", auth, wrap(async (req, res) => {
+  const report = await stats.buildReport(req.user.student_id);
+  if (!report) return res.status(404).json({ error: "ไม่พบข้อมูลรายงาน" });
+  res.json(report);
+}));
+
+app.get("/api/watchlist", auth, wrap(async (req, res) => {
+  const rows = await db.all("SELECT ticker FROM watchlist WHERE student_id = ? ORDER BY added_at DESC", [req.user.student_id]);
+  res.json(rows.map(r => r.ticker));
+}));
+
+app.post("/api/watchlist", auth, wrap(async (req, res) => {
+  const ticker = String((req.body || {}).ticker || "").toUpperCase();
+  const stock = await db.get("SELECT ticker FROM stocks WHERE ticker = ? AND status = 'active'", [ticker]);
+  if (!stock) return res.status(404).json({ error: "ไม่พบหุ้นนี้" });
+  await db.run(
+    "INSERT INTO watchlist (student_id, ticker) VALUES (?, ?) ON CONFLICT(student_id, ticker) DO NOTHING",
+    [req.user.student_id, ticker]
+  );
+  res.json({ ok: true });
+}));
+
+app.delete("/api/watchlist/:ticker", auth, wrap(async (req, res) => {
+  await db.run("DELETE FROM watchlist WHERE student_id = ? AND ticker = ?",
+    [req.user.student_id, req.params.ticker.toUpperCase()]);
+  res.json({ ok: true });
+}));
+
 // ==================== TEACHER ====================
+
+app.get("/api/teacher/settings", auth, requireTeacher, wrap(async (req, res) => {
+  res.json({ leaderboardEnabled: await stats.isLeaderboardEnabled() });
+}));
+
+app.post("/api/teacher/settings", auth, requireTeacher, wrap(async (req, res) => {
+  const { leaderboardEnabled } = req.body || {};
+  if (typeof leaderboardEnabled === "boolean") {
+    await stats.setSetting("leaderboard_enabled", leaderboardEnabled ? "1" : "0");
+  }
+  res.json({ ok: true, leaderboardEnabled: await stats.isLeaderboardEnabled() });
+}));
+
+app.get("/api/teacher/students/:id/report", auth, requireTeacher, wrap(async (req, res) => {
+  const report = await stats.buildReport(req.params.id);
+  if (!report) return res.status(404).json({ error: "ไม่พบนักเรียนนี้" });
+  res.json(report);
+}));
 
 app.get("/api/teacher/students", auth, requireTeacher, wrap(async (req, res) => {
   const students = await db.all("SELECT student_id, name, cash, must_change_password, created_at FROM users WHERE role = 'student' ORDER BY name", []);

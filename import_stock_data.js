@@ -17,6 +17,7 @@ const db = require("./db");
 const { distributePendingDividends } = require("./pay_dividends");
 const { applyPendingSplits } = require("./apply_splits");
 const { markFetchedTickers, liquidateDelistedHoldings } = require("./handle_delisting");
+const { takeAllSnapshots } = require("./stats");
 
 const DATA_FILE = path.join(__dirname, "set_data.json");
 
@@ -189,6 +190,10 @@ async function main() {
   console.log("กำลังตรวจสอบและจ่ายเงินปันผลที่ถึงกำหนด...");
   const result = await distributePendingDividends();
   console.log(`จ่ายปันผลให้นักเรียนรวม ${result.count} รายการ (${result.totalAmount.toLocaleString("th-TH")} บาท)`);
+
+  // บันทึกมูลค่าพอร์ตของนักเรียนทุกคน (ใช้ทำสรุปรายสัปดาห์ และกราฟในรายงานสรุปผล)
+  const snapCount = await takeAllSnapshots();
+  console.log(`บันทึกมูลค่าพอร์ตของนักเรียน ${snapCount} คน`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
