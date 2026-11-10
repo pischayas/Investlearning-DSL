@@ -114,6 +114,18 @@ def load_existing_output(output_path: str) -> dict:
     return {}
 
 
+def deep_clean(obj):
+    """กรองค่า NaN/Infinity ออกจากข้อมูลทั้งหมด (ตัวเลขเดี่ยว -> None, ในลิสต์ -> ตัดทิ้ง)
+    Yahoo ส่งราคาปิดบางวันมาเป็น NaN ได้ (เช่น วันที่หุ้นไม่มีการซื้อขาย) ถ้าไม่กรอง จะเขียน JSON ไม่ได้"""
+    if isinstance(obj, float):
+        return None if (math.isnan(obj) or math.isinf(obj)) else obj
+    if isinstance(obj, dict):
+        return {k: deep_clean(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [x for x in (deep_clean(v) for v in obj) if x is not None]
+    return obj
+
+
 def fetch_one(set_ticker: str, name: str) -> dict | None:
     yahoo_ticker = to_yahoo_ticker(set_ticker)
     try:
@@ -172,7 +184,7 @@ def fetch_one(set_ticker: str, name: str) -> dict | None:
         except Exception:
             pass
 
-        return {
+        return deep_clean({
             "ticker": set_ticker,
             "name": name or info.get("longName", ""),
             "yahoo_ticker": yahoo_ticker,
@@ -187,7 +199,7 @@ def fetch_one(set_ticker: str, name: str) -> dict | None:
             "dividend_history": dividend_history,
             "split_history": split_history,
             "fetched_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-        }
+        })
     except Exception as e:
         print(f"  ⚠ ดึงข้อมูล {set_ticker} ไม่สำเร็จ: {e}")
         return None
@@ -224,7 +236,7 @@ def main():
             results[ticker] = data
             # เซฟทุกครั้งที่ได้ข้อมูลใหม่ กันข้อมูลหายถ้าสคริปต์ถูกหยุดกลางทาง
             with open(args.output, "w", encoding="utf-8") as f:
-                json.dump(results, f, ensure_ascii=False, indent=2, allow_nan=False)
+                json.dump(deep_clean(results), f, ensure_ascii=False, indent=2, allow_nan=False)
 
         time.sleep(SLEEP_SECONDS)
 
