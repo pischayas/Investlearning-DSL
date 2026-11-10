@@ -1,0 +1,57 @@
+# .github/workflows/update-stock-data.yml
+#
+# อัปเดตราคาหุ้นเข้า Turso อัตโนมัติ 3 รอบ/วัน (จันทร์-ศุกร์)
+# เวลาไทย 10:00, 13:00, 16:00 น. = เวลา UTC 03:00, 06:00, 09:00
+# กดรันเองได้จากแท็บ Actions → Update Stock Data → Run workflow
+#
+# หมายเหตุ: GitHub อาจเริ่มรอบช้ากว่าเวลาที่ตั้งไว้ได้ไม่กี่นาที (ปกติ)
+#
+# ต้องมีไฟล์นี้ "ไฟล์เดียว" ในโฟลเดอร์ .github/workflows ถ้ามีหลายไฟล์ที่ทำงานเดียวกัน จะรันซ้ำและเปลืองโควต้า
+
+name: Update Stock Data
+
+on:
+  schedule:
+    - cron: '0 3,6,9 * * 1-5'
+  workflow_dispatch: {}
+
+# กันไม่ให้สองรอบรันซ้อนกัน (เช่น กดรันเองตอนที่รอบอัตโนมัติกำลังทำงาน)
+concurrency:
+  group: update-stock-data
+  cancel-in-progress: false
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120   # กันค้าง: ถ้าเกิน 2 ชม. ให้หยุดเอง จะได้ไม่กินโควต้านาที
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Python dependencies
+        run: pip install yfinance financedatabase pandas
+
+      - name: Install Node dependencies
+        run: npm install
+
+      # ถ้า Yahoo ตอบกลับสำเร็จน้อยกว่า 70% ขั้นตอนนี้จะ "ล้มเหลว" และขั้นตอนนำเข้าด้านล่างจะถูกข้าม
+      # ข้อมูลเดิมในระบบจึงปลอดภัย (รอบนั้นจะขึ้น ❌ ในแท็บ Actions)
+      - name: Fetch latest stock data from Yahoo Finance
+        run: python fetch_set_data.py --output set_data.json
+
+      - name: Import into Turso
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: node import_stock_data.js
