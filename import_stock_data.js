@@ -163,24 +163,44 @@ async function seedMockData() {
   return Object.keys(MOCK);
 }
 
+// ถ้ารอบนี้ดึงข้อมูลสำเร็จน้อยกว่า 80% ของหุ้นที่มีอยู่ในระบบ ถือว่าการดึงข้อมูลมีปัญหา (เช่น Yahoo บล็อกชั่วคราว)
+// จะไม่ตัดสินว่าหุ้นตัวไหนถูกเพิกถอน เพื่อไม่ให้ล้างพอร์ตนักเรียนผิดพลาด
+const MIN_FETCH_RATIO = 0.8;
+const MOCK_MODE_MAX_STOCKS = 5; // ถ้ามีหุ้นในระบบเกินนี้ แปลว่าเป็นข้อมูลจริงแล้ว ห้ามเอาข้อมูลจำลองไปทับ
+
 async function main() {
   await db.init();
+
+  const before = await db.get("SELECT COUNT(*) AS c FROM stocks WHERE status = 'active'", []);
+  const previousActive = before ? before.c : 0;
 
   let fetchedTickers;
   if (fs.existsSync(DATA_FILE)) {
     fetchedTickers = await seedFromRealData();
   } else {
+    if (previousActive > MOCK_MODE_MAX_STOCKS) {
+      console.error("ไม่พบ set_data.json แต่ในระบบมีข้อมูลหุ้นจริงอยู่แล้ว (" + previousActive + " ตัว)");
+      console.error("หยุดทำงานเพื่อไม่ให้ข้อมูลจำลองไปทับข้อมูลจริง — ตรวจสอบว่าขั้นตอนดึงข้อมูลจาก Yahoo สำเร็จหรือไม่");
+      process.exit(1);
+    }
     fetchedTickers = await seedMockData();
   }
 
   console.log("กำลังตรวจสอบหุ้นที่อาจถูกเพิกถอน...");
-  const newlyDelisted = await markFetchedTickers(fetchedTickers);
-  if (newlyDelisted.length > 0) {
-    console.log(`พบหุ้นที่ถูกเพิกถอนจริง: ${newlyDelisted.join(", ")}`);
-    const delistResult = await liquidateDelistedHoldings(newlyDelisted);
-    console.log(`ล้างพอร์ตนักเรียนที่ถือหุ้นเหล่านี้ ${delistResult.affectedCount} รายการ (มูลค่าที่สูญเสีย ${delistResult.totalLostValue.toLocaleString("th-TH")} บาท)`);
+  const fetchLooksBroken = previousActive >= 20 && fetchedTickers.length < previousActive * MIN_FETCH_RATIO;
+  if (fetchLooksBroken) {
+    console.error("⚠ รอบนี้ดึงข้อมูลได้เพียง " + fetchedTickers.length + " จาก " + previousActive + " ตัว (ต่ำกว่า " + (MIN_FETCH_RATIO * 100) + "%)");
+    console.error("ข้ามการตรวจหุ้นที่ถูกเพิกถอนในรอบนี้ เพื่อป้องกันการล้างพอร์ตนักเรียนผิดพลาด");
+    process.exitCode = 1; // ให้รอบนี้ขึ้น ❌ ใน GitHub Actions จะได้รู้ว่ามีปัญหา
   } else {
-    console.log("ไม่พบหุ้นที่ถูกเพิกถอนใหม่");
+    const newlyDelisted = await markFetchedTickers(fetchedTickers);
+    if (newlyDelisted.length > 0) {
+      console.log(`พบหุ้นที่ถูกเพิกถอนจริง: ${newlyDelisted.join(", ")}`);
+      const delistResult = await liquidateDelistedHoldings(newlyDelisted);
+      console.log(`ล้างพอร์ตนักเรียนที่ถือหุ้นเหล่านี้ ${delistResult.affectedCount} รายการ (มูลค่าที่สูญเสีย ${delistResult.totalLostValue.toLocaleString("th-TH")} บาท)`);
+    } else {
+      console.log("ไม่พบหุ้นที่ถูกเพิกถอนใหม่");
+    }
   }
 
   console.log("กำลังตรวจสอบและปรับหุ้นที่แตกพาร์/รวมพาร์...");
